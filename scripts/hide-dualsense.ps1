@@ -9,18 +9,20 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [switch]$Undo,
-    [string]$Dotnet = (& mise which dotnet 2>$null)
+    [string]$Dotnet = (& mise which dotnet 2>$null),
+    [switch]$Elevated # internal: set on the gsudo re-run so it can never elevate again
 )
 $ErrorActionPreference = 'Stop'
 $cli = Join-Path $env:ProgramFiles 'Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe'
 if (-not (Test-Path $cli)) { throw "HidHide not installed: winget install Nefarius.HidHide" }
 if (-not $Dotnet -or -not (Test-Path $Dotnet)) { throw "dotnet not found; pass -Dotnet <path>" }
 
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrator')
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin -and -not $WhatIfPreference) {
+    if ($Elevated) { throw "Re-run via gsudo is still not admin; refusing to elevate again." }
     if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) { throw "Not elevated and gsudo missing: winget install gerardog.gsudo" }
     # re-run elevated; pass -Dotnet explicitly because the elevated session may not have mise on PATH
-    $argv = @('-Dotnet', $Dotnet); if ($Undo) { $argv += '-Undo' }
+    $argv = @('-Dotnet', $Dotnet, '-Elevated'); if ($Undo) { $argv += '-Undo' }
     gsudo pwsh -NoProfile -File $PSCommandPath @argv
     exit $LASTEXITCODE
 }
