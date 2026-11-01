@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DualSenseEmu.Core\DualSenseEmu.Core.csproj" />
+    <ProjectReference Include="..\DualSenseEmu.Device\DualSenseEmu.Device.csproj" />
   </ItemGroup>
 
   <ItemGroup>
