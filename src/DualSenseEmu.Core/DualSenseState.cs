@@ -14,4 +14,7 @@ public enum DsButtons : ushort
 /// <summary>Raw DualSense state: sticks/triggers 0-255 (sticks centre at 128, up = 0).</summary>
 public readonly record struct DualSenseState(
     byte Lx, byte Ly, byte Rx, byte Ry, byte L2, byte R2,
-    DsButtons Buttons, bool DpadRight);
+    DsButtons Buttons, bool DpadRight,
+    int BatteryPercent = -1, ChargeState Charge = ChargeState.Unknown);
+
+public enum ChargeState { Unknown, Discharging, Charging, Full }

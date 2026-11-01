@@ -44,8 +44,24 @@ public static class ReportParser
         if (hat is 5 or 6 or 7) btn |= DsButtons.DpadLeft;
         bool right = hat is 1 or 2 or 3;
 
+        var (pct, charge) = report.Length > o + StatusOffset ? ParseBattery(report[o + StatusOffset]) : (-1, ChargeState.Unknown);
         state = new DualSenseState(report[o], report[o + 1], report[o + 2], report[o + 3],
-                                   report[o + 4], report[o + 5], btn, right);
+                                   report[o + 4], report[o + 5], btn, right, pct, charge);
         return true;
+    }
+
+    const int StatusOffset = 52; // battery/charge byte, relative to the first axis byte (hid-playstation layout)
+
+    /// <summary>Low nibble = level 0-10, high nibble = state (0 discharging, 1 charging, 2 full, others = error).</summary>
+    public static (int Percent, ChargeState Charge) ParseBattery(byte status)
+    {
+        int level = status & 0x0F;
+        return (status >> 4) switch
+        {
+            0x0 => (Math.Min(level * 10 + 5, 100), ChargeState.Discharging),
+            0x1 => (Math.Min(level * 10 + 5, 100), ChargeState.Charging),
+            0x2 => (100, ChargeState.Full),
+            _ => (-1, ChargeState.Unknown),
+        };
     }
 }

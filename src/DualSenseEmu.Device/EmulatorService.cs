@@ -8,6 +8,8 @@ namespace DualSenseEmu.Device;
 
 public enum EmuState { Stopped, Running, Error }
 
+public enum Transport { None, Usb, Bluetooth }
+
 public sealed record EmuStatus(EmuState State, string Message);
 
 public sealed record Snapshot(DualSenseState Ds, X360State X360);
@@ -29,6 +31,9 @@ public sealed class EmulatorService : IDisposable
     public Snapshot? Latest { get; private set; }
 
     public bool IsRunning => _task is { IsCompleted: false };
+
+    /// <summary>How the pad is connected right now (None while not emulating).</summary>
+    public Transport Transport { get; private set; }
 
     public void Start()
     {
@@ -60,6 +65,7 @@ public sealed class EmulatorService : IDisposable
             stream = device.Open();
             stream.ReadTimeout = 500; // lets Stop() take effect even if the pad goes quiet
             bool bluetooth = device.GetMaxInputReportLength() > UsbInputLength;
+            Transport = bluetooth ? Transport.Bluetooth : Transport.Usb;
             if (bluetooth)
             {
                 var feature = new byte[device.GetMaxFeatureReportLength()];
@@ -104,6 +110,7 @@ public sealed class EmulatorService : IDisposable
             client?.Dispose();
             stream?.Dispose();
             Latest = null;
+            Transport = Transport.None;
         }
     }
 

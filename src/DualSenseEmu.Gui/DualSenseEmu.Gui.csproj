@@ -10,12 +10,18 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\icon.png" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>DualSenseEmu</AssemblyName>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <NoWarn>$(NoWarn);CA1416</NoWarn> <!-- Registry is Windows-only; this app is too -->
   </PropertyGroup>
 
 </Project>
