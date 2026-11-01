@@ -95,7 +95,7 @@ public partial class MainWindow : Window
     }
 
 
-    bool _loadingTuning;
+    bool _loadingTuning = true; // sliders fire ValueChanged inside InitializeComponent, before the other controls exist
 
     void LoadTuning()
     {
