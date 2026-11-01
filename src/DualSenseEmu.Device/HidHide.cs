@@ -17,6 +17,10 @@ public static class HidHide
     // Sony VID 054C; PID 0CE6 = DualSense, 0DF2 = DualSense Edge (USB and Bluetooth instance paths)
     static readonly Regex SonyPad = new(@"VID[_&](0002)?054C.*PID[_&](0CE6|0DF2)", RegexOptions.IgnoreCase);
 
+    // The paths end up inside an elevated cmd line, so accept only the characters real instance paths use
+    // (no quote, space or % that could break out of the quotes).
+    static readonly Regex SafePath = new(@"^[A-Za-z0-9_{}&\\\-]+$");
+
     /// <summary>Pulls DualSense instance paths out of `HidHideCLI --dev-gaming` JSON.</summary>
     public static IReadOnlyList<string> ParseDualSensePaths(string json)
     {
@@ -26,7 +30,7 @@ public static class HidHide
         {
             if (!group.TryGetProperty("devices", out var devices)) continue;
             foreach (var d in devices.EnumerateArray())
-                if (d.TryGetProperty("deviceInstancePath", out var p) && p.GetString() is { } path && SonyPad.IsMatch(path))
+                if (d.TryGetProperty("deviceInstancePath", out var p) && p.GetString() is { } path && SonyPad.IsMatch(path) && SafePath.IsMatch(path))
                     found.Add(path);
         }
         return found.Distinct().ToList();
@@ -41,13 +45,20 @@ public static class HidHide
     {
         var pads = FindDualSense();
         if (pads.Count == 0) return false;
-        var cmds = new List<string>();
-        foreach (var p in pads) cmds.Add($"\"{CliPath}\" {(hide ? "--dev-hide" : "--dev-unhide")} \"{p}\"");
+        // HidHide needs admin; chaining the calls in one elevated cmd means a single prompt.
+        // shortcut: only pads connected right now are hidden; switching USB <-> Bluetooth needs a re-toggle.
+        return RunElevated("cmd.exe", $"/c \"{BuildChain(hide, pads, appPath)}\"");
+    });
+
+    /// <summary>The HidHideCLI calls joined with && so the first failure stops the rest (and the exit code is the failing one).</summary>
+    public static string BuildChain(bool hide, IEnumerable<string> pads, string appPath)
+    {
+        if (appPath.Contains('"') || appPath.Contains('%')) throw new ArgumentException("Unsafe app path", nameof(appPath));
+        var cmds = pads.Select(p => $"\"{CliPath}\" {(hide ? "--dev-hide" : "--dev-unhide")} \"{p}\"").ToList();
         cmds.Add($"\"{CliPath}\" {(hide ? "--app-reg" : "--app-unreg")} \"{appPath}\"");
         cmds.Add($"\"{CliPath}\" {(hide ? "--cloak-on" : "--cloak-off")}");
-        // HidHide needs admin; chaining the calls in one elevated cmd means a single prompt.
-        return RunElevated("cmd.exe", $"/c \"{string.Join(" & ", cmds)}\"");
-    });
+        return string.Join(" && ", cmds);
+    }
 
     public static Task<bool> InstallAsync() => Task.Run(() =>
         RunElevated("winget", "install --id Nefarius.HidHide -e --accept-package-agreements --accept-source-agreements"));

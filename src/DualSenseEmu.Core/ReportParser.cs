@@ -42,11 +42,11 @@ public static class ReportParser
         if (hat is 7 or 0 or 1) btn |= DsButtons.DpadUp;
         if (hat is 3 or 4 or 5) btn |= DsButtons.DpadDown;
         if (hat is 5 or 6 or 7) btn |= DsButtons.DpadLeft;
-        bool right = hat is 1 or 2 or 3;
+        if (hat is 1 or 2 or 3) btn |= DsButtons.DpadRight;
 
         var (pct, charge) = report.Length > o + StatusOffset ? ParseBattery(report[o + StatusOffset]) : (-1, ChargeState.Unknown);
         state = new DualSenseState(report[o], report[o + 1], report[o + 2], report[o + 3],
-                                   report[o + 4], report[o + 5], btn, right, pct, charge);
+                                   report[o + 4], report[o + 5], btn, pct, charge);
         return true;
     }
 

@@ -27,14 +27,15 @@ public partial class MainWindow : Window
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
             StatusText.Text = s.Message;
-            StatusDot.Fill = s.State switch { EmuState.Running => Green, EmuState.Error => Red, _ => Grey };
-            StartStop.Content = s.State == EmuState.Running ? "Stop" : "Start";
+            StatusDot.Fill = s.State switch { EmuState.Running => Green, EmuState.Error => Red, EmuState.Waiting => Amber, _ => Grey };
+            StartStop.Content = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error ? "Stop" : "Start"; // it keeps retrying until stopped
         });
         _timer.Tick += (_, _) => RefreshLive();
         _timer.Start();
         Closing += (_, e) =>
         {
-            if (_exiting) return;
+            // only the X button hides to the tray; Windows shutdown / sign-out must be allowed to close us
+            if (_exiting || e.CloseReason != WindowCloseReason.WindowClosing) return;
             e.Cancel = true; // keep emulating in the tray
             Hide();
         };
@@ -63,6 +64,8 @@ public partial class MainWindow : Window
         if (!IsPublishedExe) ToolTip.SetTip(StartupToggle, "Run the published DualSenseEmu.exe to enable this.");
     }
 
+    // shortcut: registers the exe where it runs now (dist\ in the repo); rebuilding or moving it breaks start-at-login.
+    // Copying it to %LOCALAPPDATA% would also need the HidHide whitelist to follow the copy - not worth it yet.
     void OnStartupToggle(object? sender, RoutedEventArgs e)
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
@@ -116,7 +119,7 @@ public partial class MainWindow : Window
         }
         var ds = snap.Ds;
         var x = snap.X360;
-        _dsPad.Update(k => k == "DpadRight" ? ds.DpadRight : Enum.TryParse<DsButtons>(k, out var b) && ds.Buttons.HasFlag(b),
+        _dsPad.Update(k => Enum.TryParse<DsButtons>(k, out var b) && ds.Buttons.HasFlag(b),
             ds.L2, ds.R2, ds.Lx, ds.Ly, ds.Rx, ds.Ry);
         _xboxPad.Update(k => Enum.TryParse<X360Buttons>(k, out var b) && x.Buttons.HasFlag(b),
             x.LeftTrigger, x.RightTrigger, ds.Lx, ds.Ly, ds.Rx, ds.Ry);
