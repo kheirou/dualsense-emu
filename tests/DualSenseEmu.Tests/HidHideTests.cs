@@ -25,6 +25,11 @@ public class HidHideTests
     [Fact]
     public void Empty_list_gives_nothing() => Assert.Empty(HidHide.ParseDualSensePaths("[]"));
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("HidHide driver not found")]
+    public void Non_json_output_gives_nothing_instead_of_throwing(string output) => Assert.Empty(HidHide.ParseDualSensePaths(output));
+
     [Fact]
     public void Chain_stops_on_first_failure_and_covers_pad_app_and_cloak()
     {
