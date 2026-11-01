@@ -53,6 +53,7 @@ public partial class MainWindow : Window
             Hide();
         };
         Opened += async (_, _) => { _timer.Start(); await RefreshHideState(); };
+        LoadTuning();
         RefreshStartup();
         _emu.Start(); // emulate straight away; Stop is one click
     }
@@ -90,6 +91,45 @@ public partial class MainWindow : Window
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
         if (StartupToggle.IsChecked == true) key.SetValue(RunValue, $"\"{Environment.ProcessPath}\" --tray");
         else key.DeleteValue(RunValue, throwOnMissingValue: false);
+    }
+
+
+    bool _loadingTuning;
+
+    void LoadTuning()
+    {
+        var p = _emu.Profile;
+        _loadingTuning = true;
+        DeadzoneSlider.Value = p.LeftDeadzone;
+        CurveSlider.Value = p.Curve;
+        TriggerSlider.Value = p.TriggerThreshold;
+        InvertYBox.IsChecked = p.InvertLeftY && p.InvertRightY;
+        SwapBox.IsChecked = p.SwapSticks;
+        _loadingTuning = false;
+    }
+
+    // the sliders edit the shared tuning only; Remap (and anything else in the file) is kept as is
+    void OnCheck(object? sender, RoutedEventArgs e) => OnTune(sender, e);
+
+    void OnSlide(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e) => OnTune(sender, e);
+
+    void OnTune(object? sender, EventArgs e)
+    {
+        if (_loadingTuning) return;
+        bool inv = InvertYBox.IsChecked == true;
+        _emu.Profile = _emu.Profile with
+        {
+            LeftDeadzone = DeadzoneSlider.Value, RightDeadzone = DeadzoneSlider.Value,
+            Curve = CurveSlider.Value, TriggerThreshold = (byte)TriggerSlider.Value,
+            InvertLeftY = inv, InvertRightY = inv, SwapSticks = SwapBox.IsChecked == true,
+        };
+        _emu.Profile.Save();
+    }
+
+    void OnEditProfile(object? sender, RoutedEventArgs e)
+    {
+        if (!File.Exists(MapProfile.DefaultPath)) _emu.Profile.Save();
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(MapProfile.DefaultPath) { UseShellExecute = true });
     }
 
     void OnStartStop(object? sender, RoutedEventArgs e)

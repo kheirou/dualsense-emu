@@ -121,4 +121,60 @@ public class MappingTests
         var r = new byte[12]; r[0] = ReportParser.UsbReportId; r[8] = 0x08;
         Assert.Equal(-1, Parse(r).BatteryPercent);
     }
+
+    [Fact]
+    public void Default_profile_changes_nothing()
+    {
+        var s = Parse(Usb(b0: 0x28, lx: 255, ly: 0, l2: 77));
+        Assert.Equal(X360Mapper.Map(s), X360Mapper.Map(s, new MapProfile()));
+    }
+
+    [Fact]
+    public void Deadzone_zeroes_small_deflection_and_curve_softens_the_rest()
+    {
+        Assert.Equal(0, X360Mapper.Map(Parse(Usb(lx: 140)), new MapProfile { LeftDeadzone = 0.2 }).LeftX);
+        Assert.True(Math.Abs(X360Mapper.Map(Parse(Usb(lx: 200)), new MapProfile { Curve = 2 }).LeftX)
+                  < Math.Abs(X360Mapper.Map(Parse(Usb(lx: 200))).LeftX));
+    }
+
+    [Fact]
+    public void Swap_and_invert_sticks()
+    {
+        var s = Parse(Usb(lx: 255, ly: 0));
+        Assert.Equal(32767, X360Mapper.Map(s, new MapProfile { SwapSticks = true }).RightX);
+        Assert.Equal(-32768, X360Mapper.Map(s, new MapProfile { InvertLeftY = true }).LeftY);
+    }
+
+    [Fact]
+    public void Trigger_threshold()
+    {
+        Assert.Equal(0, X360Mapper.Trigger(40, 50));
+        Assert.Equal(255, X360Mapper.Trigger(255, 50));
+        Assert.Equal(0, X360Mapper.Trigger(255, 255));
+    }
+
+    [Fact]
+    public void Remap_swaps_disables_and_maps_touchpad()
+    {
+        var p = new MapProfile { Remap = new() {
+            [DsButtons.Cross] = X360Buttons.B, [DsButtons.Circle] = X360Buttons.None, [DsButtons.Touchpad] = X360Buttons.Guide } };
+        var x = X360Mapper.Map(Parse(Usb(b0: 0x08 | 0x20 | 0x40, b2: 0x02)), p); // cross + circle + touchpad
+        Assert.Equal(X360Buttons.B | X360Buttons.Guide, x.Buttons);
+    }
+
+    [Fact]
+    public void Profile_roundtrips_and_bad_file_gives_defaults()
+    {
+        var f = Path.GetTempFileName();
+        try
+        {
+            new MapProfile { Curve = 2, Remap = new() { [DsButtons.Mute] = X360Buttons.Back } }.Save(f);
+            var p = MapProfile.Load(f);
+            Assert.Equal(2, p.Curve);
+            Assert.Equal(X360Buttons.Back, p.Remap![DsButtons.Mute]);
+            File.WriteAllText(f, "{ not json");
+            Assert.Equal(new MapProfile(), MapProfile.Load(f));
+        }
+        finally { File.Delete(f); }
+    }
 }

@@ -30,6 +30,9 @@ public sealed class EmulatorService : IDisposable
     /// <summary>Latest input; written from the reader thread, polled by the UI (a stale frame is harmless).</summary>
     public Snapshot? Latest { get; private set; }
 
+    /// <summary>Tuning applied to every frame; swap the whole record to change it live.</summary>
+    public volatile MapProfile Profile = MapProfile.Load();
+
     public bool IsRunning => _task is { IsCompleted: false };
 
     /// <summary>How the pad is connected right now (None while not emulating).</summary>
@@ -137,7 +140,7 @@ public sealed class EmulatorService : IDisposable
                 try { n = stream.Read(buf); }
                 catch (TimeoutException) { continue; }
                 if (!ReportParser.TryParse(buf.AsSpan(0, n), out var ds)) continue;
-                var x = X360Mapper.Map(ds);
+                var x = X360Mapper.Map(ds, Profile);
                 Latest = new Snapshot(ds, x);
                 Submit(pad, x);
             }

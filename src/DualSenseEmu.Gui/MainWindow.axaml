@@ -189,6 +189,19 @@
                 </StackPanel>
               </StackPanel>
               <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
+              <Expander Header="Tuning" Foreground="#C9D3E6">
+                <StackPanel Spacing="6" Margin="0,6,0,0">
+                  <TextBlock Text="Stick deadzone" Classes="dim" />
+                  <Slider x:Name="DeadzoneSlider" Minimum="0" Maximum="0.4" ValueChanged="OnSlide" />
+                  <TextBlock Text="Stick curve (1 = linear)" Classes="dim" />
+                  <Slider x:Name="CurveSlider" Minimum="1" Maximum="3" ValueChanged="OnSlide" />
+                  <TextBlock Text="Trigger threshold" Classes="dim" />
+                  <Slider x:Name="TriggerSlider" Minimum="0" Maximum="100" ValueChanged="OnSlide" />
+                  <CheckBox x:Name="InvertYBox" Content="Invert Y (both sticks)" Click="OnCheck" />
+                  <CheckBox x:Name="SwapBox" Content="Swap sticks" Click="OnCheck" />
+                  <Button Content="Edit button remap (profile.json)" Click="OnEditProfile" />
+                </StackPanel>
+              </Expander>
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
                 <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
