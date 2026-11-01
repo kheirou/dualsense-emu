@@ -1,26 +1,37 @@
-using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
+using DualSenseEmu.Core;
 using DualSenseEmu.Device;
 
 namespace DualSenseEmu.Gui;
 
 public partial class MainWindow : Window
 {
-    static readonly string HidHideCli = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-        @"Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe");
+    static readonly IBrush Green = new SolidColorBrush(Color.Parse("#3DDC84"));
+    static readonly IBrush Red = new SolidColorBrush(Color.Parse("#FF5C5C"));
+    static readonly IBrush Grey = new SolidColorBrush(Color.Parse("#8A93A6"));
+    static readonly IBrush ChipOff = new SolidColorBrush(Color.Parse("#12141A"));
+    static readonly IBrush ChipOn = new SolidColorBrush(Color.Parse("#6C8CFF"));
+    static readonly IBrush TextOff = new SolidColorBrush(Color.Parse("#8A93A6"));
+    static readonly IBrush TextOn = Brushes.White;
+    const double PadSize = 120, DotSize = 18;
 
+    readonly Dictionary<string, Border> _chips = new();
     readonly EmulatorService _emu = new();
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
     public MainWindow()
     {
         InitializeComponent();
+        BuildChips();
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
             StatusText.Text = s.Message;
+            StatusDot.Fill = s.State switch { EmuState.Running => Green, EmuState.Error => Red, _ => Grey };
             StartStop.Content = s.State == EmuState.Running ? "Stop" : "Start";
         });
         _timer.Tick += (_, _) => RefreshLive();
@@ -35,21 +46,44 @@ public partial class MainWindow : Window
         if (_emu.IsRunning) _emu.Stop(); else _emu.Start();
     }
 
+    void BuildChips()
+    {
+        var names = Enum.GetValues<DsButtons>().Where(b => b != DsButtons.None).Select(b => b.ToString()).Append("DpadRight");
+        foreach (var n in names)
+        {
+            var label = new TextBlock { Text = n, FontSize = 12, Foreground = TextOff };
+            var chip = new Border
+            {
+                Child = label, Background = ChipOff, CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(10, 5), Margin = new Thickness(0, 0, 6, 6),
+            };
+            _chips[n] = chip;
+            Chips.Children.Add(chip);
+        }
+    }
+
+    static void MoveDot(Ellipse dot, byte x, byte y)
+    {
+        // 0-255 raw, centre 128 -> dot inside the pad circle
+        Canvas.SetLeft(dot, x / 255.0 * (PadSize - DotSize));
+        Canvas.SetTop(dot, y / 255.0 * (PadSize - DotSize));
+    }
+
     void RefreshLive()
     {
-        if (_emu.Latest is not { } snap)
+        var snap = _emu.Latest;
+        var ds = snap?.Ds ?? default;
+        // idle: sticks centred, nothing pressed
+        MoveDot(LeftDot, snap is null ? (byte)128 : ds.Lx, snap is null ? (byte)128 : ds.Ly);
+        MoveDot(RightDot, snap is null ? (byte)128 : ds.Rx, snap is null ? (byte)128 : ds.Ry);
+        L2.Value = snap is null ? 0 : ds.L2;
+        R2.Value = snap is null ? 0 : ds.R2;
+        foreach (var (name, chip) in _chips)
         {
-            ButtonsText.Text = "-";
-            foreach (var bar in new[] { L2, R2, LX, LY, RX, RY }) bar.Value = 0;
-            return;
+            bool on = snap is not null && (name == "DpadRight" ? ds.DpadRight : ds.Buttons.HasFlag(Enum.Parse<DsButtons>(name)));
+            chip.Background = on ? ChipOn : ChipOff;
+            ((TextBlock)chip.Child!).Foreground = on ? TextOn : TextOff;
         }
-        var ds = snap.Ds;
-        var pressed = Enum.GetValues<DualSenseEmu.Core.DsButtons>()
-            .Where(b => b != DualSenseEmu.Core.DsButtons.None && ds.Buttons.HasFlag(b)).Select(b => b.ToString()).ToList();
-        if (ds.DpadRight) pressed.Add("DpadRight");
-        ButtonsText.Text = pressed.Count == 0 ? "(none)" : string.Join("  ", pressed);
-        L2.Value = ds.L2; R2.Value = ds.R2;
-        LX.Value = ds.Lx; LY.Value = ds.Ly; RX.Value = ds.Rx; RY.Value = ds.Ry;
     }
 
     async void OnHideToggle(object? sender, RoutedEventArgs e)
@@ -57,49 +91,30 @@ public partial class MainWindow : Window
         bool hide = HideToggle.IsChecked == true;
         HideToggle.IsEnabled = false;
         HideText.Text = "Waiting for admin approval (UAC)...";
-        string? script = FindScript();
-        if (script is null) HideText.Text = "scripts\\hide-dualsense.ps1 not found.";
-        else
-        {
-            int code = await Task.Run(() => RunScript(script, hide));
-            if (code != 0) HideText.Text = "Hide script failed or was cancelled.";
-        }
+        // Whitelist the process that reads the pad (DualSenseEmu.exe, or dotnet.exe under `dotnet run`).
+        bool ok = await HidHide.SetHiddenAsync(hide, Environment.ProcessPath!);
         await RefreshHideState();
+        if (!ok) HideText.Text = "Not changed: approval declined, or no DualSense connected.";
         HideToggle.IsEnabled = true;
     }
 
-    // Whitelist the process that actually reads the pad (this exe, or dotnet.exe under `dotnet run`).
-    static int RunScript(string script, bool hide)
+    async void OnInstallHidHide(object? sender, RoutedEventArgs e)
     {
-        var psi = new ProcessStartInfo("pwsh") { CreateNoWindow = true, UseShellExecute = false };
-        foreach (var a in new[] { "-NoProfile", "-File", script, "-Dotnet", Environment.ProcessPath! }) psi.ArgumentList.Add(a);
-        if (!hide) psi.ArgumentList.Add("-Undo");
-        using var p = Process.Start(psi);
-        if (p is null) return -1;
-        p.WaitForExit();
-        return p.ExitCode;
-    }
-
-    // shortcut: walks up from the exe to find the repo script; a published exe should ship it beside itself.
-    static string? FindScript()
-    {
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-        {
-            var f = Path.Combine(dir.FullName, "scripts", "hide-dualsense.ps1");
-            if (File.Exists(f)) return f;
-        }
-        return null;
+        InstallHidHide.IsEnabled = false;
+        HideText.Text = "Installing HidHide (approve the prompts)...";
+        bool ok = await HidHide.InstallAsync();
+        await RefreshHideState();
+        if (!ok || !HidHide.IsInstalled) HideText.Text = "HidHide install failed or was cancelled. A restart may be needed after installing.";
+        InstallHidHide.IsEnabled = true;
     }
 
     async Task RefreshHideState()
     {
-        if (!File.Exists(HidHideCli)) { HideToggle.IsEnabled = false; HideText.Text = "HidHide not installed (winget install Nefarius.HidHide)."; return; }
-        string state = await Task.Run(() =>
-        {
-            using var p = Process.Start(new ProcessStartInfo(HidHideCli, "--cloak-state") { RedirectStandardOutput = true, CreateNoWindow = true });
-            var o = p!.StandardOutput.ReadToEnd(); p.WaitForExit(); return o;
-        });
-        bool on = state.Contains("--cloak-on");
+        bool installed = HidHide.IsInstalled;
+        InstallHidHide.IsVisible = !installed;
+        HideToggle.IsEnabled = installed;
+        if (!installed) { HideText.Text = "HidHide is not installed. It is needed to hide the real pad from games."; return; }
+        bool on = await Task.Run(HidHide.IsCloakOn);
         HideToggle.IsChecked = on;
         HideText.Text = on ? "Real pad is hidden from games." : "Real pad is visible to games (double input possible).";
     }
