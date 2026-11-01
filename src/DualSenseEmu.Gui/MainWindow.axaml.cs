@@ -107,7 +107,10 @@ public partial class MainWindow : Window
         InvertYBox.IsChecked = p.InvertLeftY && p.InvertRightY;
         SwapBox.IsChecked = p.SwapSticks;
         LightbarBox.Text = p.Lightbar ?? "";
-        ShowSwatch(p.Lightbar);
+        LightModeBox.SelectedIndex = (int)p.LightbarMode;
+        PlayerBox.SelectedIndex = p.PlayerNumber;
+        StaticPanel.IsVisible = p.LightbarMode == LightbarMode.Static;
+        ShowColour(p.Lightbar);
         BuildRemap(p);
         _loadingTuning = false;
     }
@@ -161,19 +164,63 @@ public partial class MainWindow : Window
         _emu.Profile.Save();
     }
 
-    void ShowSwatch(string? hex)
-        => LightSwatch.Background = OutputReport.ParseColour(hex) is var (r, g, b) ? new SolidColorBrush(Color.FromRgb(r, g, b)) : Brushes.Transparent;
+    void SetLightbar(string? hex, bool fromPicker)
+    {
+        _emu.Profile = _emu.Profile with { Lightbar = hex };
+        _emu.Profile.Save();
+        _emu.RefreshOutput();
+        _loadingTuning = true; // keep the picker and the text box in step without re-entering
+        if (hex is null) { LightbarBox.Text = ""; ShowColour(null); }
+        else
+        {
+            if (fromPicker) LightbarBox.Text = hex;
+            else ShowColour(hex);
+        }
+        _loadingTuning = false;
+    }
+
+    void OnLightMode(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingTuning || LightModeBox.SelectedIndex < 0) return;
+        var mode = (LightbarMode)LightModeBox.SelectedIndex;
+        StaticPanel.IsVisible = mode == LightbarMode.Static;
+        _emu.Profile = _emu.Profile with { LightbarMode = mode };
+        _emu.Profile.Save();
+        _emu.RefreshOutput();
+    }
+
+    void OnPlayer(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingTuning || PlayerBox.SelectedIndex < 0) return;
+        _emu.Profile = _emu.Profile with { PlayerNumber = (byte)PlayerBox.SelectedIndex };
+        _emu.Profile.Save();
+        _emu.RefreshOutput();
+    }
+
+    void ShowColour(string? hex)
+    {
+        var c = OutputReport.ParseColour(hex);
+        (RedSlider.Value, GreenSlider.Value, BlueSlider.Value) = c is var (r, g, b) ? (r, g, b) : (0, 0, 0);
+        LightSwatch.Background = c is var (r2, g2, b2) ? new SolidColorBrush(Color.FromRgb(r2, g2, b2)) : Brushes.Transparent;
+    }
+
+    void OnRgb(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (_loadingTuning) return;
+        var hex = $"#{(int)RedSlider.Value:X2}{(int)GreenSlider.Value:X2}{(int)BlueSlider.Value:X2}";
+        LightSwatch.Background = new SolidColorBrush(Color.Parse(hex));
+        SetLightbar(hex, fromPicker: true);
+    }
 
     void OnLightbar(object? sender, TextChangedEventArgs e)
     {
         if (_loadingTuning) return;
         var hex = LightbarBox.Text?.Trim();
-        ShowSwatch(hex);
-        if (!string.IsNullOrEmpty(hex) && OutputReport.ParseColour(hex) is null) return; // still typing
-        _emu.Profile = _emu.Profile with { Lightbar = string.IsNullOrEmpty(hex) ? null : hex };
-        _emu.Profile.Save();
-        _emu.RefreshOutput();
+        if (string.IsNullOrEmpty(hex)) SetLightbar(null, fromPicker: false);
+        else if (OutputReport.ParseColour(hex) is not null) SetLightbar(hex, fromPicker: false); // else still typing
     }
+
+    void OnLightbarClear(object? sender, RoutedEventArgs e) => SetLightbar(null, fromPicker: false);
 
     void OnResetTuning(object? sender, RoutedEventArgs e)
     {
@@ -221,7 +268,7 @@ public partial class MainWindow : Window
         BatteryFill.Background = ds.Charge == ChargeState.Charging ? Blue
             : ds.BatteryPercent < 20 ? Red : ds.BatteryPercent < 40 ? Amber : Green;
         BatteryText.Text = $"{ds.BatteryPercent}%";
-        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "⚡Charging", ChargeState.Full => "Full", _ => "" };
+        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "âš¡Charging", ChargeState.Full => "Full", _ => "" };
     }
 
     void RefreshLive()

@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 namespace DualSenseEmu.Core;
 
 /// <summary>User tuning for the DualSense to Xbox translation. Defaults reproduce the plain 1:1 mapping.</summary>
+public enum LightbarMode { Static, Battery, Charging }
+
 public sealed record MapProfile
 {
     /// <summary>Radial deadzone, 0-0.5 of stick travel.</summary>
@@ -18,6 +20,10 @@ public sealed record MapProfile
     public byte TriggerThreshold { get; init; }
     /// <summary>Lightbar colour as "#RRGGBB"; null leaves the pad's own colour.</summary>
     public string? Lightbar { get; init; }
+    /// <summary>What the lightbar shows: the static colour, or a colour driven by battery level or charging state.</summary>
+    public LightbarMode LightbarMode { get; init; }
+    /// <summary>Player LEDs 1-4; 0 leaves them alone.</summary>
+    public byte PlayerNumber { get; init; }
     /// <summary>Overrides of the default button map; a DualSense button mapped to None is disabled.
     /// Touchpad and Mute are unmapped by default, so e.g. "Touchpad": "Guide" makes them useful.</summary>
     public Dictionary<DsButtons, X360Buttons>? Remap { get; init; }

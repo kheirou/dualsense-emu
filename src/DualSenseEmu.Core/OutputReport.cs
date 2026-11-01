@@ -7,7 +7,7 @@ public static class OutputReport
     const byte UsbId = 0x02, BtId = 0x31;
 
     /// <param name="rgb">Lightbar colour, or null to leave it alone.</param>
-    public static byte[] Build(bool bluetooth, byte left, byte right, (byte R, byte G, byte B)? rgb, byte btSeq = 0)
+    public static byte[] Build(bool bluetooth, byte left, byte right, (byte R, byte G, byte B)? rgb, byte btSeq = 0, byte player = 0)
     {
         var r = new byte[bluetooth ? BtLength : UsbLength];
         int o; // index of valid_flag0
@@ -17,9 +17,14 @@ public static class OutputReport
         r[o] = 0x01 | 0x02;       // compatible vibration + haptics select
         r[o + 2] = right;         // small motor
         r[o + 3] = left;          // big motor
+        if (player is >= 1 and <= 4)
+        {
+            r[o + 1] |= 0x10;     // player indicator control enable
+            r[o + 43] = PlayerLeds[player - 1];
+        }
         if (rgb is var (red, green, blue))
         {
-            r[o + 1] = 0x04;      // lightbar control enable
+            r[o + 1] |= 0x04;      // lightbar control enable
             r[o + 38] = 0x02;     // valid_flag2: lightbar setup enable
             r[o + 41] = 0x02;     // lightbar setup: fade out the pairing animation
             r[o + 42] = 0x00;     // brightness: brightest
@@ -31,6 +36,30 @@ public static class OutputReport
             BitConverter.TryWriteBytes(r.AsSpan(BtLength - 4), crc);
         }
         return r;
+    }
+
+    // the five LEDs left to right; player N lights the centre then spreads outwards
+    static readonly byte[] PlayerLeds = [0x04, 0x0A, 0x15, 0x1B];
+
+    static readonly (byte, byte, byte) Green = (0x3D, 0xDC, 0x84), Amber = (0xFF, 0xB1, 0x3D), Red = (0xFF, 0x3B, 0x30);
+
+    /// <summary>The colour the lightbar should show now; null = leave the pad's own.</summary>
+    public static (byte, byte, byte)? Resolve(MapProfile p, DualSenseState? ds)
+    {
+        var fixedColour = ParseColour(p.Lightbar);
+        if (ds is not { } s) return fixedColour;
+        return p.LightbarMode switch
+        {
+            LightbarMode.Battery when s.BatteryPercent >= 0 =>
+                s.BatteryPercent < 20 ? Red : s.BatteryPercent < 40 ? Amber : Green,
+            LightbarMode.Charging => s.Charge switch
+            {
+                ChargeState.Charging => Amber,
+                ChargeState.Full => Green,
+                _ => fixedColour,
+            },
+            _ => fixedColour,
+        };
     }
 
     /// <summary>CRC-32 (zlib) over the 0xA2 seed byte then the report body; no package needed for 10 lines.</summary>

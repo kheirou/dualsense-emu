@@ -132,119 +132,145 @@
         </StackPanel>
       </Grid>
 
-      <Grid ColumnDefinitions="470,*" ColumnSpacing="22">
+      <TabControl>
+        <TabItem Header="Dashboard">
+        <Grid ColumnDefinitions="470,*" ColumnSpacing="22">
 
-        <!-- left: controller management -->
-        <Border Classes="card">
-          <StackPanel Spacing="18">
-            <TextBlock FontSize="24" FontWeight="Bold">
-              <Run Text="CONTROLLER " Foreground="#3FE0FF" /><Run Text="MANAGEMENT" Foreground="#F2F6FF" />
-            </TextBlock>
+          <!-- left: controller management -->
+          <Border Classes="card">
+            <StackPanel Spacing="18">
+              <TextBlock FontSize="24" FontWeight="Bold">
+                <Run Text="CONTROLLER " Foreground="#3FE0FF" /><Run Text="MANAGEMENT" Foreground="#F2F6FF" />
+              </TextBlock>
 
-            <!-- knob + stacked mode pills -->
-            <Panel>
-              <StackPanel Margin="58,0,0,0" Spacing="12">
-                <Button x:Name="SegEmulate" Classes="mode" Content="EMULATE XBOX GAMEPAD" Click="OnEmulate" />
-                <Button x:Name="SegOff" Classes="mode" Content="PASSTHROUGH (OFF)" Click="OnOff" />
-              </StackPanel>
-              <Border Width="128" Height="128" CornerRadius="64" HorizontalAlignment="Left" VerticalAlignment="Center"
-                      Background="#0B1222" BorderBrush="#2A3A56" BorderThickness="1.5" BoxShadow="0 0 22 2 #553FE0FF">
-                <Panel>
-                  <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#3FE0FF" StrokeThickness="7" StrokeLineCap="Round" />
-                  <Border Width="66" Height="66" CornerRadius="33" BorderBrush="#33456A" BorderThickness="1">
-                    <Border.Background>
-                      <RadialGradientBrush Center="40%,35%" GradientOrigin="40%,35%">
-                        <GradientStop Color="#2A3550" Offset="0" />
-                        <GradientStop Color="#0E1422" Offset="1" />
-                      </RadialGradientBrush>
-                    </Border.Background>
-                    <Border x:Name="KnobTick" Width="3" Height="12" CornerRadius="2" Background="#3FE0FF" VerticalAlignment="Top" Margin="0,8,0,0" />
-                  </Border>
-                </Panel>
+              <!-- knob + stacked mode pills -->
+              <Panel>
+                <StackPanel Margin="58,0,0,0" Spacing="12">
+                  <Button x:Name="SegEmulate" Classes="mode" Content="EMULATE XBOX GAMEPAD" Click="OnEmulate" />
+                  <Button x:Name="SegOff" Classes="mode" Content="PASSTHROUGH (OFF)" Click="OnOff" />
+                </StackPanel>
+                <Border Width="128" Height="128" CornerRadius="64" HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Background="#0B1222" BorderBrush="#2A3A56" BorderThickness="1.5" BoxShadow="0 0 22 2 #553FE0FF">
+                  <Panel>
+                    <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#3FE0FF" StrokeThickness="7" StrokeLineCap="Round" />
+                    <Border Width="66" Height="66" CornerRadius="33" BorderBrush="#33456A" BorderThickness="1">
+                      <Border.Background>
+                        <RadialGradientBrush Center="40%,35%" GradientOrigin="40%,35%">
+                          <GradientStop Color="#2A3550" Offset="0" />
+                          <GradientStop Color="#0E1422" Offset="1" />
+                        </RadialGradientBrush>
+                      </Border.Background>
+                      <Border x:Name="KnobTick" Width="3" Height="12" CornerRadius="2" Background="#3FE0FF" VerticalAlignment="Top" Margin="0,8,0,0" />
+                    </Border>
+                  </Panel>
+                </Border>
+              </Panel>
+
+              <!-- current status -->
+              <Border x:Name="StatusPanel" CornerRadius="14" BorderThickness="1.5" BorderBrush="#2C6B5A" Background="#B30E2524" Padding="18">
+                <StackPanel Spacing="8">
+                  <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="14" Height="14" Fill="#8A93A6" VerticalAlignment="Center" />
+                    <TextBlock FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center">
+                      <Run Text="CURRENT STATUS: " Foreground="#F2F6FF" /><Run x:Name="StatusWord" Text="STOPPED" Foreground="#8A93A6" />
+                    </TextBlock>
+                  </StackPanel>
+                  <TextBlock x:Name="StatusText" Text="" Classes="dim" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
+                  <Button x:Name="InstallVigem" Content="Install ViGEmBus driver" IsVisible="False" HorizontalAlignment="Center" Click="OnInstallVigem" />
+                  <Button x:Name="StartStop" Content="START EMULATION" Click="OnStartStop" Margin="0,6,0,0" />
+                </StackPanel>
               </Border>
-            </Panel>
 
-            <!-- current status -->
-            <Border x:Name="StatusPanel" CornerRadius="14" BorderThickness="1.5" BorderBrush="#2C6B5A" Background="#B30E2524" Padding="18">
-              <StackPanel Spacing="8">
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                  <Ellipse x:Name="StatusDot" Width="14" Height="14" Fill="#8A93A6" VerticalAlignment="Center" />
-                  <TextBlock FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center">
-                    <Run Text="CURRENT STATUS: " Foreground="#F2F6FF" /><Run x:Name="StatusWord" Text="STOPPED" Foreground="#8A93A6" />
-                  </TextBlock>
+              <!-- settings -->
+              <StackPanel Spacing="12" >
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
+                  <StackPanel VerticalAlignment="Center" Spacing="1">
+                    <TextBlock Text="Hide real pad" Classes="label" />
+                    <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
+                  </StackPanel>
                 </StackPanel>
-                <TextBlock x:Name="StatusText" Text="" Classes="dim" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
-                <Button x:Name="InstallVigem" Content="Install ViGEmBus driver" IsVisible="False" HorizontalAlignment="Center" Click="OnInstallVigem" />
-                <Button x:Name="StartStop" Content="START EMULATION" Click="OnStartStop" Margin="0,6,0,0" />
+                <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
+                  <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
-            </Border>
+            </StackPanel>
+          </Border>
 
-            <!-- settings, one tab per feature -->
-            <TabControl>
-              <TabItem Header="General">
-                <StackPanel Spacing="12" Margin="0,10,0,0">
-                  <StackPanel Orientation="Horizontal" Spacing="12">
-                    <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
-                    <StackPanel VerticalAlignment="Center" Spacing="1">
-                      <TextBlock Text="Hide real pad" Classes="label" />
-                      <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
-                    </StackPanel>
-                  </StackPanel>
-                  <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
-                  <StackPanel Orientation="Horizontal" Spacing="12">
-                    <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
-                    <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
-                  </StackPanel>
-                </StackPanel>
-              </TabItem>
-              <TabItem Header="Sticks">
-                <StackPanel Spacing="6" Margin="0,10,0,0">
-                  <TextBlock Text="Stick deadzone" Classes="dim" />
-                  <Slider x:Name="DeadzoneSlider" Minimum="0" Maximum="0.4" ValueChanged="OnSlide" />
-                  <TextBlock Text="Stick curve (1 = linear)" Classes="dim" />
-                  <Slider x:Name="CurveSlider" Minimum="1" Maximum="3" ValueChanged="OnSlide" />
-                  <TextBlock Text="Trigger threshold" Classes="dim" />
-                  <Slider x:Name="TriggerSlider" Minimum="0" Maximum="100" ValueChanged="OnSlide" />
-                  <CheckBox x:Name="InvertYBox" Content="Invert Y (both sticks)" Click="OnCheck" />
-                  <CheckBox x:Name="SwapBox" Content="Swap sticks" Click="OnCheck" />
-                  <Button Content="Reset all tuning" Click="OnResetTuning" Margin="0,6,0,0" />
-                </StackPanel>
-              </TabItem>
-              <TabItem Header="Buttons">
-                <ScrollViewer MaxHeight="300" Margin="0,10,0,0">
-                  <StackPanel x:Name="RemapPanel" Spacing="4" />
-                </ScrollViewer>
-              </TabItem>
-              <TabItem Header="Lightbar">
-                <StackPanel Spacing="6" Margin="0,10,0,0">
-                  <TextBlock Text="Colour (#RRGGBB, empty = pad's own)" Classes="dim" />
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Border x:Name="LightSwatch" Width="28" Height="28" CornerRadius="14" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
-                    <TextBox x:Name="LightbarBox" Width="120" Watermark="#3FE0FF" TextChanged="OnLightbar" />
-                  </StackPanel>
-                </StackPanel>
-              </TabItem>
-            </TabControl>
-          </StackPanel>
-        </Border>
+          <!-- right: live input -->
+          <Border Grid.Column="1" Classes="card">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="19" VerticalAlignment="Center">
+                <Run Text="LIVE INPUT" FontWeight="Bold" Foreground="#C9D3E6" /><Run Text="  ·  Active map translation" Foreground="#8A97B0" FontSize="15" />
+              </TextBlock>
+              <Viewbox Height="230" Stretch="Uniform" Margin="0,6,0,0"><Canvas x:Name="DsCanvas" /></Viewbox>
+              <TextBlock Text="PS5 DualSense" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" />
+              <Border Classes="badge"><TextBlock x:Name="TransTop" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
+              <Border Width="2" Height="14" Background="#3FE0FF" HorizontalAlignment="Center" BoxShadow="0 0 6 1 #883FE0FF" />
+              <Viewbox Height="230" Stretch="Uniform"><Canvas x:Name="XboxCanvas" /></Viewbox>
+              <Border Classes="badge"><TextBlock x:Name="TransBottom" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
+              <TextBlock Text="Xbox 360 Pad" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- right: live input -->
-        <Border Grid.Column="1" Classes="card">
-          <StackPanel Spacing="4">
-            <TextBlock FontSize="19" VerticalAlignment="Center">
-              <Run Text="LIVE INPUT" FontWeight="Bold" Foreground="#C9D3E6" /><Run Text="  ·  Active map translation" Foreground="#8A97B0" FontSize="15" />
-            </TextBlock>
-            <Viewbox Height="230" Stretch="Uniform" Margin="0,6,0,0"><Canvas x:Name="DsCanvas" /></Viewbox>
-            <TextBlock Text="PS5 DualSense" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" />
-            <Border Classes="badge"><TextBlock x:Name="TransTop" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
-            <Border Width="2" Height="14" Background="#3FE0FF" HorizontalAlignment="Center" BoxShadow="0 0 6 1 #883FE0FF" />
-            <Viewbox Height="230" Stretch="Uniform"><Canvas x:Name="XboxCanvas" /></Viewbox>
-            <Border Classes="badge"><TextBlock x:Name="TransBottom" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
-            <TextBlock Text="Xbox 360 Pad" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
-
-      </Grid>
+        </Grid>
+        </TabItem>
+        <TabItem Header="Sticks">
+          <Border Classes="card" Margin="0,14,0,0">
+              <StackPanel Spacing="6" >
+                <TextBlock Text="Stick deadzone" Classes="dim" />
+                <Slider x:Name="DeadzoneSlider" Minimum="0" Maximum="0.4" ValueChanged="OnSlide" />
+                <TextBlock Text="Stick curve (1 = linear)" Classes="dim" />
+                <Slider x:Name="CurveSlider" Minimum="1" Maximum="3" ValueChanged="OnSlide" />
+                <TextBlock Text="Trigger threshold" Classes="dim" />
+                <Slider x:Name="TriggerSlider" Minimum="0" Maximum="100" ValueChanged="OnSlide" />
+                <CheckBox x:Name="InvertYBox" Content="Invert Y (both sticks)" Click="OnCheck" />
+                <CheckBox x:Name="SwapBox" Content="Swap sticks" Click="OnCheck" />
+                <Button Content="Reset all tuning" Click="OnResetTuning" Margin="0,6,0,0" />
+              </StackPanel>
+          </Border>
+        </TabItem>
+        <TabItem Header="Buttons">
+          <Border Classes="card" Margin="0,14,0,0">
+              <ScrollViewer MaxHeight="300" >
+                <StackPanel x:Name="RemapPanel" Spacing="4" />
+              </ScrollViewer>
+          </Border>
+        </TabItem>
+        <TabItem Header="Lightbar">
+          <Border Classes="card" Margin="0,14,0,0">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Lightbar shows" Classes="label" />
+              <ComboBox x:Name="LightModeBox" Width="220" SelectionChanged="OnLightMode">
+                <ComboBoxItem Content="Static colour" />
+                <ComboBoxItem Content="Battery level (green / amber / red)" />
+                <ComboBoxItem Content="Charging status" />
+              </ComboBox>
+              <TextBlock Text="Player LEDs" Classes="label" />
+              <ComboBox x:Name="PlayerBox" Width="220" SelectionChanged="OnPlayer">
+                <ComboBoxItem Content="Leave as is" />
+                <ComboBoxItem Content="Player 1" />
+                <ComboBoxItem Content="Player 2" />
+                <ComboBoxItem Content="Player 3" />
+                <ComboBoxItem Content="Player 4" />
+              </ComboBox>
+              <StackPanel x:Name="StaticPanel" Spacing="10">
+                <TextBlock Text="Static colour" Classes="label" />
+                <Border x:Name="LightSwatch" Height="36" CornerRadius="8" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
+                <Slider x:Name="RedSlider" Minimum="0" Maximum="255" Foreground="#FF5C5C" ValueChanged="OnRgb" />
+                <Slider x:Name="GreenSlider" Minimum="0" Maximum="255" Foreground="#3DDC84" ValueChanged="OnRgb" />
+                <Slider x:Name="BlueSlider" Minimum="0" Maximum="255" Foreground="#6C8CFF" ValueChanged="OnRgb" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBox x:Name="LightbarBox" Width="120" Watermark="#RRGGBB" TextChanged="OnLightbar" />
+                  <Button Content="Use pad's own colour" Click="OnLightbarClear" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </TabItem>
+      </TabControl>
     </StackPanel>
   </Panel>
 </Window>
