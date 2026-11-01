@@ -101,7 +101,7 @@ public sealed class EmulatorService : IDisposable
             pad = client.CreateXbox360Controller();
             pad.AutoSubmitReport = false;
             pad.Connect();
-            Report(EmuState.Running, $"Emulating Xbox 360 pad from {device.GetProductName()} over {(bluetooth ? "Bluetooth" : "USB")}");
+            Report(EmuState.Running, $"Emulating: games see an Xbox 360 pad ({(bluetooth ? "Bluetooth" : "USB")})");
 
             var buf = new byte[device.GetMaxInputReportLength()];
             while (!ct.IsCancellationRequested)

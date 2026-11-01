@@ -10,7 +10,13 @@ namespace DualSenseEmu.Gui;
 public sealed class PadMap
 {
     static readonly IBrush Off = new SolidColorBrush(Color.Parse("#12141A"));
-    static readonly IBrush BodyFill = new SolidColorBrush(Color.Parse("#232733"));
+    // lit from above, so the pad reads as an object rather than a flat cut-out
+    static readonly IBrush BodyFill = new LinearGradientBrush
+    {
+        StartPoint = new RelativePoint(0.5, 0, RelativeUnit.Relative),
+        EndPoint = new RelativePoint(0.5, 1, RelativeUnit.Relative),
+        GradientStops = { new GradientStop(Color.Parse("#2E3342"), 0), new GradientStop(Color.Parse("#1C1F28"), 1) },
+    };
     static readonly IBrush Edge = new SolidColorBrush(Color.Parse("#3A4050"));
     static readonly IBrush Dim = new SolidColorBrush(Color.Parse("#8A93A6"));
     static readonly IBrush Accent = new SolidColorBrush(Color.Parse("#6C8CFF"));
@@ -32,7 +38,7 @@ public sealed class PadMap
             Fill = BodyFill, Stroke = Edge, StrokeThickness = 2,
         });
         // triggers (fill brightens with pull) and bumpers
-        _l2 = Trigger(36, 0); _r2 = Trigger(184, 0);
+        _l2 = Trigger(36, 0, xbox ? "LT" : "L2"); _r2 = Trigger(184, 0, xbox ? "RT" : "R2");
         Part(xbox ? "LeftShoulder" : "L1", 32, 9, 50, 11, 4, xbox ? "LB" : "L1", Accent, 8);
         Part(xbox ? "RightShoulder" : "R1", 178, 9, 50, 11, 4, xbox ? "RB" : "R1", Accent, 8);
 
@@ -76,12 +82,14 @@ public sealed class PadMap
         Part("DpadRight", cx + 7, cy - 7, 14, 14, 3, "▶", Accent, 7);
     }
 
-    Border Trigger(double x, double y)
+    Border Trigger(double x, double y, string label)
     {
         var outline = new Border { Width = 40, Height = 9, CornerRadius = new CornerRadius(4), Background = Off, BorderBrush = Edge, BorderThickness = new Thickness(1) };
         Canvas.SetLeft(outline, x); Canvas.SetTop(outline, y); _canvas.Children.Add(outline);
         var fill = new Border { Width = 40, Height = 9, CornerRadius = new CornerRadius(4), Background = Accent, Opacity = 0 };
         Canvas.SetLeft(fill, x); Canvas.SetTop(fill, y); _canvas.Children.Add(fill);
+        var text = new TextBlock { Text = label, FontSize = 6, Foreground = Dim, Width = 40, TextAlignment = TextAlignment.Center, IsHitTestVisible = false };
+        Canvas.SetLeft(text, x); Canvas.SetTop(text, y + 0.5); _canvas.Children.Add(text);
         return fill;
     }
 

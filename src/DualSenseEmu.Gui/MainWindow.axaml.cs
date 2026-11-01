@@ -28,7 +28,9 @@ public partial class MainWindow : Window
         {
             StatusText.Text = s.Message;
             StatusDot.Fill = s.State switch { EmuState.Running => Green, EmuState.Error => Red, EmuState.Waiting => Amber, _ => Grey };
-            StartStop.Content = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error ? "Stop" : "Start"; // it keeps retrying until stopped
+            bool active = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error; // it keeps retrying until stopped
+            StartStop.Content = active ? "Stop" : "Start";
+            StartStop.Classes.Set("stop", active);
         });
         _timer.Tick += (_, _) => RefreshLive();
         _timer.Start();
@@ -47,6 +49,12 @@ public partial class MainWindow : Window
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunValue = "DualSenseEmu";
     bool _exiting;
+
+    // the title bar is drawn over by our content, so any empty spot moves the window (buttons handle their own clicks)
+    void OnDragWindow(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+    }
 
     public void ShowFromTray() { Show(); WindowState = WindowState.Normal; Activate(); }
 
