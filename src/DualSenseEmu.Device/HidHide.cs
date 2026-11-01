@@ -25,7 +25,10 @@ public static class HidHide
     public static IReadOnlyList<string> ParseDualSensePaths(string json)
     {
         var found = new List<string>();
-        using var doc = JsonDocument.Parse(json);
+        JsonDocument doc;
+        // empty / error text happens when HidHide is installed but its driver is not active yet (needs a restart)
+        try { doc = JsonDocument.Parse(json); } catch (JsonException) { return found; }
+        using var _ = doc;
         foreach (var group in doc.RootElement.EnumerateArray())
         {
             if (!group.TryGetProperty("devices", out var devices)) continue;

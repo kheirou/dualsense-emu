@@ -6,7 +6,6 @@ Makes a DualSense show up as a virtual Xbox 360 pad on Windows (ViGEmBus), for g
 
 ```powershell
 mise exec -- dotnet run --project src\DualSenseEmu.Gui -c Release   # window + tray
-mise exec -- dotnet run --project src\DualSenseEmu.App -c Release   # console only, Ctrl+C to stop
 ```
 
 Needs the ViGEmBus driver; if it is missing the app shows an "Install ViGEmBus driver" button.
