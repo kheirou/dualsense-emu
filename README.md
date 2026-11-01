@@ -18,3 +18,12 @@ pwsh scripts\hide-dualsense.ps1          # hide real DualSense, whitelist dotnet
 pwsh scripts\hide-dualsense.ps1 -Undo    # reverse it
 pwsh scripts\hide-dualsense.ps1 -WhatIf  # preview only
 ```
+
+## GUI
+
+```powershell
+mise exec -- dotnet run --project src\DualSenseEmu.Gui -c Release
+```
+
+Window shows status, Start/Stop, a "Hide real pad" toggle (asks for admin via the script) and a live input view.
+The console app (`src\DualSenseEmu.App`) still works and shares the same emulator code (`src\DualSenseEmu.Device`).
