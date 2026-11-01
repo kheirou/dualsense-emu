@@ -11,7 +11,7 @@ mise exec -- dotnet run --project src\DualSenseEmu.App -c Release
 
 ## Hide the real pad (avoid double input)
 
-Needs HidHide (`winget install Nefarius.HidHide`) and an elevated pwsh:
+Needs HidHide (`winget install Nefarius.HidHide`) and gsudo (`winget install gerardog.gsudo`); the script elevates itself:
 
 ```powershell
 pwsh scripts\hide-dualsense.ps1          # hide real DualSense, whitelist dotnet, cloak on
