@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DualSenseEmu.Core\DualSenseEmu.Core.csproj" />
+    <ProjectReference Include="..\..\src\DualSenseEmu.Device\DualSenseEmu.Device.csproj" />
   </ItemGroup>
 
 </Project>

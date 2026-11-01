@@ -10,11 +10,6 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- ship the hide script beside the exe so FindScript works when published -->
-    <Content Include="..\..\scripts\hide-dualsense.ps1" Link="scripts\hide-dualsense.ps1" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>

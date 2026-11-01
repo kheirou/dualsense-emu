@@ -1,24 +1,113 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DualSenseEmu.Gui.MainWindow"
-        Title="DualSense Emulator" Width="460" Height="520" CanResize="False">
-  <StackPanel Margin="16" Spacing="10">
-    <TextBlock x:Name="StatusText" FontSize="16" FontWeight="SemiBold" Text="Stopped" TextWrapping="Wrap" />
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button x:Name="StartStop" Content="Start" Width="90" Click="OnStartStop" />
-      <ToggleButton x:Name="HideToggle" Content="Hide real pad" Click="OnHideToggle" />
+        Title="DualSense Emulator" Width="540" Height="700" CanResize="False"
+        Background="#12141A" RequestedThemeVariant="Dark">
+  <Window.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#1C1F28" />
+      <Setter Property="BorderBrush" Value="#2A2E3A" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#8A93A6" />
+      <Setter Property="LetterSpacing" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.dim">
+      <Setter Property="Foreground" Value="#8A93A6" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="ProgressBar">
+      <Setter Property="Foreground" Value="#6C8CFF" />
+      <Setter Property="Background" Value="#2A2E3A" />
+      <Setter Property="MinHeight" Value="8" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button#StartStop">
+      <Setter Property="Background" Value="#6C8CFF" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="22,9" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button#StartStop:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#839EFF" />
+      <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+  </Window.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="20" Spacing="14">
+
+      <!-- header -->
+      <StackPanel Spacing="2">
+        <TextBlock Text="DualSense Emulator" FontSize="24" FontWeight="Bold" Foreground="#F2F4FA" />
+        <TextBlock Text="Your DualSense as a virtual Xbox 360 pad" Classes="dim" />
+      </StackPanel>
+
+      <!-- status + controls -->
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <Border Background="#12141A" CornerRadius="999" Padding="12,8" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="#8A93A6" VerticalAlignment="Center" />
+              <TextBlock x:Name="StatusText" Text="Stopped" Foreground="#E6E9F2" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="400" />
+            </StackPanel>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="18">
+            <Button x:Name="StartStop" Content="Start" MinWidth="96" Click="OnStartStop" />
+            <ToggleSwitch x:Name="HideToggle" OnContent="Hide real pad" OffContent="Hide real pad" Click="OnHideToggle" VerticalAlignment="Center" />
+            <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock x:Name="HideText" Classes="dim" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- sticks + triggers -->
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="LIVE INPUT" Classes="h" />
+          <Grid ColumnDefinitions="*,*">
+            <StackPanel Grid.Column="0" Spacing="6" HorizontalAlignment="Center">
+              <Border Width="120" Height="120" CornerRadius="60" Background="#12141A" BorderBrush="#2A2E3A" BorderThickness="1">
+                <Canvas x:Name="LeftPad" Width="120" Height="120">
+                  <Ellipse x:Name="LeftDot" Width="18" Height="18" Fill="#6C8CFF" Canvas.Left="51" Canvas.Top="51" />
+                </Canvas>
+              </Border>
+              <TextBlock Text="Left stick" Classes="dim" HorizontalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Center">
+              <Border Width="120" Height="120" CornerRadius="60" Background="#12141A" BorderBrush="#2A2E3A" BorderThickness="1">
+                <Canvas x:Name="RightPad" Width="120" Height="120">
+                  <Ellipse x:Name="RightDot" Width="18" Height="18" Fill="#6C8CFF" Canvas.Left="51" Canvas.Top="51" />
+                </Canvas>
+              </Border>
+              <TextBlock Text="Right stick" Classes="dim" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="28,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+            <TextBlock Text="L2" Classes="dim" VerticalAlignment="Center" />
+            <ProgressBar x:Name="L2" Grid.Column="1" Maximum="255" />
+            <TextBlock Grid.Row="1" Text="R2" Classes="dim" VerticalAlignment="Center" />
+            <ProgressBar x:Name="R2" Grid.Row="1" Grid.Column="1" Maximum="255" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- buttons -->
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="BUTTONS" Classes="h" />
+          <WrapPanel x:Name="Chips" />
+        </StackPanel>
+      </Border>
+
     </StackPanel>
-    <TextBlock x:Name="HideText" Opacity="0.7" Text="" TextWrapping="Wrap" />
-    <Separator />
-    <TextBlock Text="Live input" FontWeight="SemiBold" />
-    <TextBlock x:Name="ButtonsText" Text="-" TextWrapping="Wrap" />
-    <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
-      <TextBlock Grid.Row="0" Text="L2" /><ProgressBar x:Name="L2" Grid.Row="0" Grid.Column="1" Maximum="255" />
-      <TextBlock Grid.Row="1" Text="R2" /><ProgressBar x:Name="R2" Grid.Row="1" Grid.Column="1" Maximum="255" />
-      <TextBlock Grid.Row="2" Text="Left X" /><ProgressBar x:Name="LX" Grid.Row="2" Grid.Column="1" Maximum="255" />
-      <TextBlock Grid.Row="3" Text="Left Y" /><ProgressBar x:Name="LY" Grid.Row="3" Grid.Column="1" Maximum="255" />
-      <TextBlock Grid.Row="4" Text="Right X" /><ProgressBar x:Name="RX" Grid.Row="4" Grid.Column="1" Maximum="255" />
-      <TextBlock Grid.Row="5" Text="Right Y" /><ProgressBar x:Name="RY" Grid.Row="5" Grid.Column="1" Maximum="255" />
-    </Grid>
-  </StackPanel>
+  </ScrollViewer>
 </Window>

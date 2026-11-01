@@ -27,3 +27,6 @@ mise exec -- dotnet run --project src\DualSenseEmu.Gui -c Release
 
 Window shows status, Start/Stop, a "Hide real pad" toggle (asks for admin via the script) and a live input view.
 The console app (`src\DualSenseEmu.App`) still works and shares the same emulator code (`src\DualSenseEmu.Device`).
+
+The GUI talks to HidHide directly (one UAC prompt to hide or unhide) and can install HidHide for you. The PowerShell script remains as a CLI alternative.
+
