@@ -22,6 +22,11 @@ public sealed class EmulatorService : IDisposable
     const int UsbInputLength = 64;
     const byte BtEnableFeatureId = 0x05; // reading it switches Bluetooth to the full 0x31 report
 
+    Action? _send;
+
+    /// <summary>Re-sends the lightbar colour now (call after changing Profile.Lightbar).</summary>
+    public void RefreshOutput() => _send?.Invoke();
+
     CancellationTokenSource? _cts;
     Task? _task;
 
@@ -145,6 +150,7 @@ public sealed class EmulatorService : IDisposable
                 }
             }
             pad.FeedbackReceived += (_, e) => { left = e.LargeMotor; right = e.SmallMotor; Send(); };
+            _send = Send;
             Send(); // applies the lightbar colour right away
 
             var buf = new byte[device.GetMaxInputReportLength()];
@@ -164,6 +170,7 @@ public sealed class EmulatorService : IDisposable
             if (_pad is not null) // real pad gone: release everything the game could see as held
                 try { Submit(_pad, X360Mapper.Map(new DualSenseState(128, 128, 128, 128, 0, 0, DsButtons.None))); } catch { /* pad already gone */ }
             stream?.Dispose();
+            _send = null;
             Latest = null;
             Transport = Transport.None;
         }

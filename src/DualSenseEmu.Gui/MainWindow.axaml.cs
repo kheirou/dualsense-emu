@@ -105,6 +105,9 @@ public partial class MainWindow : Window
         TriggerSlider.Value = p.TriggerThreshold;
         InvertYBox.IsChecked = p.InvertLeftY && p.InvertRightY;
         SwapBox.IsChecked = p.SwapSticks;
+        LightbarBox.Text = p.Lightbar ?? "";
+        ShowSwatch(p.Lightbar);
+        BuildRemap(p);
         _loadingTuning = false;
     }
 
@@ -126,10 +129,56 @@ public partial class MainWindow : Window
         _emu.Profile.Save();
     }
 
-    void OnEditProfile(object? sender, RoutedEventArgs e)
+
+    static readonly string[] XboxTargets = Enum.GetNames<X360Buttons>().Where(n => n != "None").ToArray();
+
+    // one row per DualSense button: (default) / None / any Xbox button. Choosing (default) drops the override.
+    void BuildRemap(MapProfile p)
     {
-        if (!File.Exists(MapProfile.DefaultPath)) _emu.Profile.Save();
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(MapProfile.DefaultPath) { UseShellExecute = true });
+        RemapPanel.Children.Clear();
+        foreach (var b in Enum.GetValues<DsButtons>().Where(b => b != DsButtons.None))
+        {
+            var def = X360Mapper.DefaultFor(b);
+            var combo = new ComboBox { Width = 150, Tag = b, ItemsSource = new[] { def is null ? "(unmapped)" : $"(default: {def})", "None" }.Concat(XboxTargets).ToArray() };
+            combo.SelectedIndex = p.Remap is not null && p.Remap.TryGetValue(b, out var t)
+                ? (t == X360Buttons.None ? 1 : 2 + Array.IndexOf(XboxTargets, t.ToString())) : 0;
+            combo.SelectionChanged += OnRemap;
+            var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+            row.Children.Add(new TextBlock { Text = b.ToString(), Width = 80, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+            row.Children.Add(combo);
+            RemapPanel.Children.Add(row);
+        }
+    }
+
+    void OnRemap(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingTuning || sender is not ComboBox { Tag: DsButtons b } c) return;
+        var map = new Dictionary<DsButtons, X360Buttons>(_emu.Profile.Remap ?? []);
+        if (c.SelectedIndex <= 0) map.Remove(b);
+        else map[b] = c.SelectedIndex == 1 ? X360Buttons.None : Enum.Parse<X360Buttons>(XboxTargets[c.SelectedIndex - 2]);
+        _emu.Profile = _emu.Profile with { Remap = map.Count == 0 ? null : map };
+        _emu.Profile.Save();
+    }
+
+    void ShowSwatch(string? hex)
+        => LightSwatch.Background = OutputReport.ParseColour(hex) is var (r, g, b) ? new SolidColorBrush(Color.FromRgb(r, g, b)) : Brushes.Transparent;
+
+    void OnLightbar(object? sender, TextChangedEventArgs e)
+    {
+        if (_loadingTuning) return;
+        var hex = LightbarBox.Text?.Trim();
+        ShowSwatch(hex);
+        if (!string.IsNullOrEmpty(hex) && OutputReport.ParseColour(hex) is null) return; // still typing
+        _emu.Profile = _emu.Profile with { Lightbar = string.IsNullOrEmpty(hex) ? null : hex };
+        _emu.Profile.Save();
+        _emu.RefreshOutput();
+    }
+
+    void OnResetTuning(object? sender, RoutedEventArgs e)
+    {
+        _emu.Profile = new MapProfile();
+        _emu.Profile.Save();
+        LoadTuning();
     }
 
     void OnStartStop(object? sender, RoutedEventArgs e)

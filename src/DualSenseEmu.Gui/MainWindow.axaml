@@ -199,7 +199,15 @@
                   <Slider x:Name="TriggerSlider" Minimum="0" Maximum="100" ValueChanged="OnSlide" />
                   <CheckBox x:Name="InvertYBox" Content="Invert Y (both sticks)" Click="OnCheck" />
                   <CheckBox x:Name="SwapBox" Content="Swap sticks" Click="OnCheck" />
-                  <Button Content="Edit button remap (profile.json)" Click="OnEditProfile" />
+                  <TextBlock Text="Lightbar colour (#RRGGBB, empty = pad's own)" Classes="dim" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border x:Name="LightSwatch" Width="28" Height="28" CornerRadius="14" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
+                    <TextBox x:Name="LightbarBox" Width="120" Watermark="#3FE0FF" TextChanged="OnLightbar" />
+                  </StackPanel>
+                  <Expander Header="Button remap" Foreground="#C9D3E6">
+                    <StackPanel x:Name="RemapPanel" Spacing="4" Margin="0,6,0,0" />
+                  </Expander>
+                  <Button Content="Reset all tuning" Click="OnResetTuning" />
                 </StackPanel>
               </Expander>
               <StackPanel Orientation="Horizontal" Spacing="12">

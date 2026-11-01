@@ -28,6 +28,10 @@ public static class X360Mapper
         (DsButtons.DpadLeft, X360Buttons.DpadLeft), (DsButtons.DpadRight, X360Buttons.DpadRight),
     ];
 
+    /// <summary>The built-in target of a DualSense button, or null (Touchpad, Mute).</summary>
+    public static X360Buttons? DefaultFor(DsButtons b)
+        => Array.Find(Default, d => d.From == b) is { From: not DsButtons.None } d ? d.To : null;
+
     public static X360State Map(DualSenseState s, MapProfile? p = null)
     {
         p ??= new MapProfile();
