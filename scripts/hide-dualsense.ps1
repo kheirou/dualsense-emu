@@ -17,7 +17,13 @@ if (-not (Test-Path $cli)) { throw "HidHide not installed: winget install Nefari
 if (-not $Dotnet -or -not (Test-Path $Dotnet)) { throw "dotnet not found; pass -Dotnet <path>" }
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrator')
-if (-not $isAdmin -and -not $WhatIfPreference) { throw "Run this from an elevated pwsh (Run as administrator)." }
+if (-not $isAdmin -and -not $WhatIfPreference) {
+    if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) { throw "Not elevated and gsudo missing: winget install gerardog.gsudo" }
+    # re-run elevated; pass -Dotnet explicitly because the elevated session may not have mise on PATH
+    $argv = @('-Dotnet', $Dotnet); if ($Undo) { $argv += '-Undo' }
+    gsudo pwsh -NoProfile -File $PSCommandPath @argv
+    exit $LASTEXITCODE
+}
 
 # Sony VID 054C; PID 0CE6 = DualSense, 0DF2 = DualSense Edge
 $paths = (& $cli --dev-gaming | ConvertFrom-Json).devices.deviceInstancePath |
