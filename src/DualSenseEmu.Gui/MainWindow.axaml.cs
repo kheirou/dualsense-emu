@@ -44,15 +44,15 @@ public partial class MainWindow : Window
             KnobTick.Background = active ? Cyan : AmberDim;
         });
         _timer.Tick += (_, _) => RefreshLive();
-        _timer.Start();
         Closing += (_, e) =>
         {
             // only the X button hides to the tray; Windows shutdown / sign-out must be allowed to close us
             if (_exiting || e.CloseReason != WindowCloseReason.WindowClosing) return;
             e.Cancel = true; // keep emulating in the tray
+            _timer.Stop(); // nobody sees the live view in the tray
             Hide();
         };
-        Opened += async (_, _) => await RefreshHideState();
+        Opened += async (_, _) => { _timer.Start(); await RefreshHideState(); };
         LoadTuning();
         RefreshStartup();
         _emu.Start(); // emulate straight away; Stop is one click
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
 
-    public void ShowFromTray() { Show(); WindowState = WindowState.Normal; Activate(); }
+    public void ShowFromTray() { _timer.Start(); Show(); WindowState = WindowState.Normal; Activate(); }
 
     public void ExitApp() { _exiting = true; _timer.Stop(); _emu.Dispose(); }
 
@@ -84,8 +84,8 @@ public partial class MainWindow : Window
         if (!IsPublishedExe) ToolTip.SetTip(StartupToggle, "Run the published DualSenseEmu.exe to enable this.");
     }
 
-    // shortcut: registers the exe where it runs now (dist\ in the repo); rebuilding or moving it breaks start-at-login.
-    // Copying it to %LOCALAPPDATA% would also need the HidHide whitelist to follow the copy - not worth it yet.
+    // shortcut: registers the exe where it runs now. Fine for the installed app (stable current\ folder); a standalone
+    // dist\ exe breaks start-at-login if rebuilt or moved.
     void OnStartupToggle(object? sender, RoutedEventArgs e)
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
@@ -225,6 +225,7 @@ public partial class MainWindow : Window
         InstallHidHide.IsVisible = !installed;
         HideToggle.IsEnabled = installed;
         if (!installed) { HideText.Text = "HidHide is not installed. It is needed to hide the real pad from games."; return; }
+        if (!IsPublishedExe) { HideToggle.IsEnabled = false; HideText.Text = "Run the published DualSenseEmu.exe to hide the pad (dotnet.exe would be whitelisted for every .NET app)."; return; }
         bool on = await Task.Run(HidHide.IsCloakOn);
         HideToggle.IsChecked = on;
         HideText.Text = on ? "Real pad is hidden from games." : "Real pad is visible to games (double input possible).";

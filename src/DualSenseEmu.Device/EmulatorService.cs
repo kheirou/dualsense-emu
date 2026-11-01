@@ -49,7 +49,7 @@ public sealed class EmulatorService : IDisposable
     public void Stop()
     {
         _cts?.Cancel();
-        _task?.Wait(3000);
+        _task?.Wait(); // full wait: a timed-out Stop would leave IsRunning true and make the next Start a silent no-op
     }
 
     EmuStatus? _last;
@@ -62,34 +62,63 @@ public sealed class EmulatorService : IDisposable
         StatusChanged?.Invoke(status);
     }
 
+    // Created on first connect and kept across pad drops, so a Bluetooth blip does not unplug the Xbox pad from the game.
+    ViGEmClient? _client;
+    IXbox360Controller? _pad;
+
     /// <summary>Keep trying until stopped: the pad may be off at login, or drop off Bluetooth mid-game.</summary>
     void Run(CancellationToken ct)
     {
-        while (!ct.IsCancellationRequested)
+        try
         {
-            try { RunOnce(ct); }
-            catch (Exception e)
+            while (!ct.IsCancellationRequested)
             {
-                if (e is Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException)
+                try { RunOnce(ct); }
+                catch (Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException)
+                {
+                    ReleasePad();
                     Report(EmuState.DriverMissing, "ViGEmBus driver is not installed.");
-                else
+                }
+                catch (IOException e) { Report(EmuState.Error, $"Controller error: {e.Message}. Retrying..."); }
+                catch (Exception e)
+                {
+                    ReleasePad(); // not a pad-read problem: rebuild the virtual pad on the next try
                     Report(EmuState.Error, $"Controller error: {e.Message}. Retrying...");
+                }
+                ct.WaitHandle.WaitOne(2000);
             }
-            ct.WaitHandle.WaitOne(2000);
         }
+        finally { ReleasePad(); }
         Report(EmuState.Stopped, "Stopped");
+    }
+
+    void ReleasePad()
+    {
+        try { _pad?.Disconnect(); } catch { /* already gone */ }
+        _client?.Dispose();
+        _pad = null; _client = null;
+    }
+
+    IXbox360Controller EnsurePad()
+    {
+        if (_pad is not null) return _pad;
+        _client = new ViGEmClient(); // throws VigemBusNotFoundException when the driver is missing
+        var pad = _client.CreateXbox360Controller();
+        pad.AutoSubmitReport = false;
+        pad.Connect();
+        return _pad = pad;
     }
 
     void RunOnce(CancellationToken ct)
     {
         HidStream? stream = null;
-        IXbox360Controller? pad = null;
-        ViGEmClient? client = null;
         try
         {
             var device = DeviceList.Local.GetHidDevices()
                 .FirstOrDefault(d => d.VendorID == SonyVid && DualSensePids.Contains(d.ProductID));
             if (device is null) { Report(EmuState.Waiting, "Waiting for a DualSense (USB or Bluetooth)..."); return; }
+
+            var pad = EnsurePad(); // before touching the HID device, so a missing driver does not poke it every 2 s
 
             stream = device.Open();
             stream.ReadTimeout = 500; // lets Stop() take effect even if the pad goes quiet
@@ -102,10 +131,6 @@ public sealed class EmulatorService : IDisposable
                 stream.GetFeature(feature);
             }
 
-            client = new ViGEmClient();
-            pad = client.CreateXbox360Controller();
-            pad.AutoSubmitReport = false;
-            pad.Connect();
             Report(EmuState.Running, $"Emulating: games see an Xbox 360 pad ({(bluetooth ? "Bluetooth" : "USB")})");
 
             var buf = new byte[device.GetMaxInputReportLength()];
@@ -117,24 +142,29 @@ public sealed class EmulatorService : IDisposable
                 if (!ReportParser.TryParse(buf.AsSpan(0, n), out var ds)) continue;
                 var x = X360Mapper.Map(ds, Profile);
                 Latest = new Snapshot(ds, x);
-                pad.SetButtonsFull((ushort)x.Buttons);
-                pad.SetSliderValue(Xbox360Slider.LeftTrigger, x.LeftTrigger);
-                pad.SetSliderValue(Xbox360Slider.RightTrigger, x.RightTrigger);
-                pad.SetAxisValue(Xbox360Axis.LeftThumbX, x.LeftX);
-                pad.SetAxisValue(Xbox360Axis.LeftThumbY, x.LeftY);
-                pad.SetAxisValue(Xbox360Axis.RightThumbX, x.RightX);
-                pad.SetAxisValue(Xbox360Axis.RightThumbY, x.RightY);
-                pad.SubmitReport();
+                Submit(pad, x);
             }
         }
         finally
         {
-            try { pad?.Disconnect(); } catch { /* already gone */ }
-            client?.Dispose();
+            if (_pad is not null) // real pad gone: release everything the game could see as held
+                try { Submit(_pad, X360Mapper.Map(new DualSenseState(128, 128, 128, 128, 0, 0, DsButtons.None))); } catch { /* pad already gone */ }
             stream?.Dispose();
             Latest = null;
             Transport = Transport.None;
         }
+    }
+
+    static void Submit(IXbox360Controller pad, X360State x)
+    {
+        pad.SetButtonsFull((ushort)x.Buttons);
+        pad.SetSliderValue(Xbox360Slider.LeftTrigger, x.LeftTrigger);
+        pad.SetSliderValue(Xbox360Slider.RightTrigger, x.RightTrigger);
+        pad.SetAxisValue(Xbox360Axis.LeftThumbX, x.LeftX);
+        pad.SetAxisValue(Xbox360Axis.LeftThumbY, x.LeftY);
+        pad.SetAxisValue(Xbox360Axis.RightThumbX, x.RightX);
+        pad.SetAxisValue(Xbox360Axis.RightThumbY, x.RightY);
+        pad.SubmitReport();
     }
 
     public void Dispose() => Stop();
