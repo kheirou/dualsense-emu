@@ -179,18 +179,26 @@
               </StackPanel>
             </Border>
 
-            <!-- settings -->
-            <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
-                <StackPanel VerticalAlignment="Center" Spacing="1">
-                  <TextBlock Text="Hide real pad" Classes="label" />
-                  <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
+            <!-- settings, one tab per feature -->
+            <TabControl>
+              <TabItem Header="General">
+                <StackPanel Spacing="12" Margin="0,10,0,0">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
+                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="Hide real pad" Classes="label" />
+                      <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
+                    </StackPanel>
+                  </StackPanel>
+                  <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
+                    <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
+                  </StackPanel>
                 </StackPanel>
-              </StackPanel>
-              <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
-              <Expander Header="Tuning" Foreground="#C9D3E6">
-                <StackPanel Spacing="6" Margin="0,6,0,0">
+              </TabItem>
+              <TabItem Header="Sticks">
+                <StackPanel Spacing="6" Margin="0,10,0,0">
                   <TextBlock Text="Stick deadzone" Classes="dim" />
                   <Slider x:Name="DeadzoneSlider" Minimum="0" Maximum="0.4" ValueChanged="OnSlide" />
                   <TextBlock Text="Stick curve (1 = linear)" Classes="dim" />
@@ -199,22 +207,24 @@
                   <Slider x:Name="TriggerSlider" Minimum="0" Maximum="100" ValueChanged="OnSlide" />
                   <CheckBox x:Name="InvertYBox" Content="Invert Y (both sticks)" Click="OnCheck" />
                   <CheckBox x:Name="SwapBox" Content="Swap sticks" Click="OnCheck" />
-                  <TextBlock Text="Lightbar colour (#RRGGBB, empty = pad's own)" Classes="dim" />
+                  <Button Content="Reset all tuning" Click="OnResetTuning" Margin="0,6,0,0" />
+                </StackPanel>
+              </TabItem>
+              <TabItem Header="Buttons">
+                <ScrollViewer MaxHeight="300" Margin="0,10,0,0">
+                  <StackPanel x:Name="RemapPanel" Spacing="4" />
+                </ScrollViewer>
+              </TabItem>
+              <TabItem Header="Lightbar">
+                <StackPanel Spacing="6" Margin="0,10,0,0">
+                  <TextBlock Text="Colour (#RRGGBB, empty = pad's own)" Classes="dim" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Border x:Name="LightSwatch" Width="28" Height="28" CornerRadius="14" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
                     <TextBox x:Name="LightbarBox" Width="120" Watermark="#3FE0FF" TextChanged="OnLightbar" />
                   </StackPanel>
-                  <Expander Header="Button remap" Foreground="#C9D3E6">
-                    <StackPanel x:Name="RemapPanel" Spacing="4" Margin="0,6,0,0" />
-                  </Expander>
-                  <Button Content="Reset all tuning" Click="OnResetTuning" />
                 </StackPanel>
-              </Expander>
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
-                <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
-              </StackPanel>
-            </StackPanel>
+              </TabItem>
+            </TabControl>
           </StackPanel>
         </Border>
 
