@@ -206,4 +206,11 @@ public class MappingTests
         Assert.Equal((255, 128, 0), OutputReport.ParseColour("#FF8000") is var (r, g, b) ? (r, g, b) : (-1, -1, -1));
         Assert.Null(OutputReport.ParseColour("nope"));
     }
+
+    [Fact]
+    public void DefaultFor_reports_builtin_targets()
+    {
+        Assert.Equal(X360Buttons.A, X360Mapper.DefaultFor(DsButtons.Cross));
+        Assert.Null(X360Mapper.DefaultFor(DsButtons.Touchpad));
+    }
 }
