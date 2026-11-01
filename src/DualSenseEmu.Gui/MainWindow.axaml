@@ -1,127 +1,218 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DualSenseEmu.Gui.MainWindow"
-        Title="DualSense Emulator" Icon="/Assets/icon.png" Width="860" SizeToContent="Height" CanResize="False"
-        Background="#12141A" RequestedThemeVariant="Dark"
-        ExtendClientAreaToDecorationsHint="True">
+        Title="DualSense Emulator" Icon="/Assets/icon.png" Width="1040" SizeToContent="Height" CanResize="False"
+        RequestedThemeVariant="Dark" ExtendClientAreaToDecorationsHint="True">
+  <Window.Background>
+    <RadialGradientBrush Center="30%,20%" GradientOrigin="30%,20%" RadiusX="100%" RadiusY="100%">
+      <GradientStop Color="#13233A" Offset="0" />
+      <GradientStop Color="#070B14" Offset="1" />
+    </RadialGradientBrush>
+  </Window.Background>
+
   <Window.Styles>
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="#1C1F28" />
-      <Setter Property="BorderBrush" Value="#2A2E3A" />
+      <Setter Property="Background" Value="#A6121A2A" />
+      <Setter Property="BorderBrush" Value="#2A3A56" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="18" />
-    </Style>
-    <Style Selector="TextBlock.h">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#8A93A6" />
-      <Setter Property="LetterSpacing" Value="1" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="22" />
     </Style>
     <Style Selector="TextBlock.dim">
-      <Setter Property="Foreground" Value="#8A93A6" />
-      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#8A97B0" />
+      <Setter Property="FontSize" Value="14" />
     </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="#E6ECF7" />
+      <Setter Property="FontSize" Value="16" />
+    </Style>
+    <Style Selector="Border.pill">
+      <Setter Property="Background" Value="#B30D1424" />
+      <Setter Property="BorderBrush" Value="#2A3A56" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="16,9" />
+    </Style>
+    <!-- the "TRANSLATING..." badges between the two pads -->
+    <Style Selector="Border.badge">
+      <Setter Property="Background" Value="#CC0B2230" />
+      <Setter Property="BorderBrush" Value="#3FE0FF" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="14,4" />
+      <Setter Property="BoxShadow" Value="0 0 10 1 #663FE0FF" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <!-- mode pills: Emulate (cyan glow) / Passthrough (amber) -->
+    <Style Selector="Button.mode">
+      <Setter Property="Background" Value="#B30D1424" />
+      <Setter Property="BorderBrush" Value="#2A3A56" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="Foreground" Value="#7E8AA2" />
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Height" Value="62" />
+      <Setter Property="Padding" Value="78,0,20,0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.mode:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#1A2740" />
+    </Style>
+    <Style Selector="Button.mode.on /template/ ContentPresenter">
+      <Setter Property="Background" Value="#1A4A66" />
+      <Setter Property="BorderBrush" Value="#3FE0FF" />
+      <Setter Property="BoxShadow" Value="0 0 16 2 #883FE0FF" />
+      <Setter Property="TextBlock.Foreground" Value="#E8FBFF" />
+    </Style>
+    <Style Selector="Button.mode.amber /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3A2E14" />
+      <Setter Property="BorderBrush" Value="#E0A23F" />
+      <Setter Property="BoxShadow" Value="0 0 14 1 #66E0A23F" />
+      <Setter Property="TextBlock.Foreground" Value="#F2D9A6" />
+    </Style>
+
+    <!-- outlined glowing STOP / START EMULATION -->
     <Style Selector="Button#StartStop">
-      <Setter Property="Background" Value="#6C8CFF" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="#10283A" />
+      <Setter Property="BorderBrush" Value="#3FE0FF" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="Foreground" Value="#E8FBFF" />
+      <Setter Property="FontSize" Value="18" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="22,9" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="28,11" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button#StartStop /template/ ContentPresenter">
+      <Setter Property="BoxShadow" Value="0 0 14 1 #663FE0FF" />
     </Style>
     <Style Selector="Button#StartStop:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#839EFF" />
+      <Setter Property="Background" Value="#16384F" />
       <Setter Property="TextBlock.Foreground" Value="White" />
-    </Style>
-    <!-- while emulating, Stop is the quiet secondary action -->
-    <Style Selector="Button#StartStop.stop">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="#3A4050" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Foreground" Value="#E6E9F2" />
-    </Style>
-    <Style Selector="Button#StartStop.stop:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#2A2E3A" />
-      <Setter Property="BorderBrush" Value="#FF5C5C" />
-      <Setter Property="TextBlock.Foreground" Value="#FF8A8A" />
     </Style>
   </Window.Styles>
 
-  <!-- dark content runs under the title bar; top margin leaves room for the caption buttons -->
+  <!-- content runs under the title bar; any empty spot drags the window -->
   <Panel Background="Transparent" PointerPressed="OnDragWindow">
-    <StackPanel Margin="22,34,22,22" Spacing="16">
+    <StackPanel Margin="24,38,24,24" Spacing="18">
 
       <!-- header -->
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <Image Source="/Assets/icon.png" Width="46" Height="46" Margin="0,0,14,0" />
-        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-          <TextBlock Text="DualSense Emulator" FontSize="24" FontWeight="Bold" Foreground="#F2F4FA" />
+        <Border Width="52" Height="52" CornerRadius="26" Background="#14203A" BorderBrush="#6C8CFF" BorderThickness="1.5"
+                BoxShadow="0 0 16 2 #666C8CFF" Margin="0,0,14,0">
+          <Image Source="/Assets/icon.png" Width="32" Height="32" />
+        </Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="DualSense Emulator" FontSize="26" FontWeight="Bold" Foreground="#F2F6FF" />
           <TextBlock Text="Your DualSense as a virtual Xbox 360 pad" Classes="dim" />
         </StackPanel>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <!-- connection: Bluetooth / wired / none -->
-          <Border Background="#1C1F28" BorderBrush="#2A2E3A" BorderThickness="1" CornerRadius="999" Padding="12,7">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Border Classes="pill">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Ellipse x:Name="ConnDot" Width="9" Height="9" Fill="#8A93A6" VerticalAlignment="Center" />
-              <TextBlock x:Name="ConnText" Text="Not connected" Foreground="#E6E9F2" VerticalAlignment="Center" />
+              <TextBlock x:Name="ConnText" Text="Not connected" Classes="label" VerticalAlignment="Center" />
             </StackPanel>
           </Border>
-          <!-- battery level + charging state -->
-          <Border Background="#1C1F28" BorderBrush="#2A2E3A" BorderThickness="1" CornerRadius="999" Padding="12,7">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+          <Border Classes="pill">
+            <StackPanel Orientation="Horizontal" Spacing="9">
               <Grid Width="32" Height="14" VerticalAlignment="Center">
-                <Border Width="28" Height="14" HorizontalAlignment="Left" CornerRadius="3" BorderBrush="#8A93A6" BorderThickness="1" Padding="1">
+                <Border Width="28" Height="14" HorizontalAlignment="Left" CornerRadius="3" BorderBrush="#8A97B0" BorderThickness="1" Padding="1">
                   <Border x:Name="BatteryFill" Width="0" HorizontalAlignment="Left" CornerRadius="2" Background="#3DDC84" />
                 </Border>
-                <Border Width="3" Height="6" HorizontalAlignment="Right" CornerRadius="1" Background="#8A93A6" />
+                <Border Width="3" Height="6" HorizontalAlignment="Right" CornerRadius="1" Background="#8A97B0" />
               </Grid>
-              <TextBlock x:Name="BatteryText" Text="Battery: --" Foreground="#E6E9F2" VerticalAlignment="Center" />
+              <TextBlock x:Name="BatteryText" Text="--" Classes="label" VerticalAlignment="Center" />
+              <TextBlock x:Name="ChargeText" Text="" FontSize="16" Foreground="#FFB13D" VerticalAlignment="Center" />
             </StackPanel>
           </Border>
         </StackPanel>
       </Grid>
 
-      <!-- status + controls -->
-      <Border Classes="card">
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
-          <StackPanel Spacing="14">
-            <Border Background="#12141A" CornerRadius="999" Padding="12,8" HorizontalAlignment="Left">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="#8A93A6" VerticalAlignment="Center" />
-                <TextBlock x:Name="StatusText" Text="Stopped" Foreground="#E6E9F2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="340" />
+      <Grid ColumnDefinitions="470,*" ColumnSpacing="22">
+
+        <!-- left: controller management -->
+        <Border Classes="card">
+          <StackPanel Spacing="18">
+            <TextBlock FontSize="24" FontWeight="Bold">
+              <Run Text="CONTROLLER " Foreground="#3FE0FF" /><Run Text="MANAGEMENT" Foreground="#F2F6FF" />
+            </TextBlock>
+
+            <!-- knob + stacked mode pills -->
+            <Panel>
+              <StackPanel Margin="58,0,0,0" Spacing="12">
+                <Button x:Name="SegEmulate" Classes="mode" Content="EMULATE XBOX GAMEPAD" Click="OnEmulate" />
+                <Button x:Name="SegOff" Classes="mode" Content="PASSTHROUGH (OFF)" Click="OnOff" />
+              </StackPanel>
+              <Border Width="128" Height="128" CornerRadius="64" HorizontalAlignment="Left" VerticalAlignment="Center"
+                      Background="#0B1222" BorderBrush="#2A3A56" BorderThickness="1.5" BoxShadow="0 0 22 2 #553FE0FF">
+                <Panel>
+                  <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#3FE0FF" StrokeThickness="7" StrokeLineCap="Round" />
+                  <Border Width="66" Height="66" CornerRadius="33" BorderBrush="#33456A" BorderThickness="1">
+                    <Border.Background>
+                      <RadialGradientBrush Center="40%,35%" GradientOrigin="40%,35%">
+                        <GradientStop Color="#2A3550" Offset="0" />
+                        <GradientStop Color="#0E1422" Offset="1" />
+                      </RadialGradientBrush>
+                    </Border.Background>
+                    <Border x:Name="KnobTick" Width="3" Height="12" CornerRadius="2" Background="#3FE0FF" VerticalAlignment="Top" Margin="0,8,0,0" />
+                  </Border>
+                </Panel>
+              </Border>
+            </Panel>
+
+            <!-- current status -->
+            <Border x:Name="StatusPanel" CornerRadius="14" BorderThickness="1.5" BorderBrush="#2C6B5A" Background="#B30E2524" Padding="18">
+              <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                  <Ellipse x:Name="StatusDot" Width="14" Height="14" Fill="#8A93A6" VerticalAlignment="Center" />
+                  <TextBlock FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center">
+                    <Run Text="CURRENT STATUS: " Foreground="#F2F6FF" /><Run x:Name="StatusWord" Text="STOPPED" Foreground="#8A93A6" />
+                  </TextBlock>
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Text="" Classes="dim" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
+                <Button x:Name="StartStop" Content="START EMULATION" Click="OnStartStop" Margin="0,6,0,0" />
               </StackPanel>
             </Border>
-            <Button x:Name="StartStop" Content="Start" MinWidth="96" HorizontalAlignment="Left" Click="OnStartStop" />
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="8">
-            <StackPanel Orientation="Horizontal" Spacing="14">
-              <ToggleSwitch x:Name="HideToggle" OnContent="Hide real pad" OffContent="Hide real pad" Click="OnHideToggle" VerticalAlignment="Center" />
-              <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" VerticalAlignment="Center" />
-            </StackPanel>
-            <TextBlock x:Name="HideText" Classes="dim" TextWrapping="Wrap" />
-            <ToggleSwitch x:Name="StartupToggle" OnContent="Start with Windows (in tray)" OffContent="Start with Windows (in tray)" Click="OnStartupToggle" />
-          </StackPanel>
-        </Grid>
-      </Border>
 
-      <!-- the two pads -->
-      <Border Classes="card">
-        <StackPanel Spacing="12">
-          <TextBlock Text="LIVE INPUT  ·  what you press, and what the game receives" Classes="h" />
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
-            <StackPanel Spacing="6">
-              <Viewbox Height="260" Stretch="Uniform"><Canvas x:Name="DsCanvas" /></Viewbox>
-              <TextBlock Text="DualSense (your controller)" Classes="dim" HorizontalAlignment="Center" />
+            <!-- settings -->
+            <StackPanel Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
+                <StackPanel VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="Hide real pad" Classes="label" />
+                  <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
+                </StackPanel>
+              </StackPanel>
+              <Button x:Name="InstallHidHide" Content="Install HidHide" IsVisible="False" Click="OnInstallHidHide" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <ToggleSwitch x:Name="StartupToggle" OnContent="" OffContent="" Click="OnStartupToggle" MinWidth="0" />
+                <TextBlock Text="Start with Windows (in tray)" Classes="label" VerticalAlignment="Center" />
+              </StackPanel>
             </StackPanel>
-            <StackPanel Grid.Column="1" Spacing="6">
-              <Viewbox Height="260" Stretch="Uniform"><Canvas x:Name="XboxCanvas" /></Viewbox>
-              <TextBlock Text="Xbox 360 (virtual pad)" Classes="dim" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Grid>
-        </StackPanel>
-      </Border>
+          </StackPanel>
+        </Border>
 
+        <!-- right: live input -->
+        <Border Grid.Column="1" Classes="card">
+          <StackPanel Spacing="4">
+            <TextBlock FontSize="19" VerticalAlignment="Center">
+              <Run Text="LIVE INPUT" FontWeight="Bold" Foreground="#C9D3E6" /><Run Text="  ·  Active map translation" Foreground="#8A97B0" FontSize="15" />
+            </TextBlock>
+            <Viewbox Height="230" Stretch="Uniform" Margin="0,6,0,0"><Canvas x:Name="DsCanvas" /></Viewbox>
+            <TextBlock Text="PS5 DualSense" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" />
+            <Border Classes="badge"><TextBlock x:Name="TransTop" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
+            <Border Width="2" Height="14" Background="#3FE0FF" HorizontalAlignment="Center" BoxShadow="0 0 6 1 #883FE0FF" />
+            <Viewbox Height="230" Stretch="Uniform"><Canvas x:Name="XboxCanvas" /></Viewbox>
+            <Border Classes="badge"><TextBlock x:Name="TransBottom" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
+            <TextBlock Text="Xbox 360 Pad" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+      </Grid>
     </StackPanel>
   </Panel>
 </Window>
