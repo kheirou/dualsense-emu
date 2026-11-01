@@ -322,7 +322,7 @@ public partial class MainWindow : Window
         BatteryFill.Background = ds.Charge == ChargeState.Charging ? Blue
             : ds.BatteryPercent < 20 ? Red : ds.BatteryPercent < 40 ? Amber : Green;
         BatteryText.Text = $"{ds.BatteryPercent}%";
-        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "âš¡Charging", ChargeState.Full => "Full", _ => "" };
+        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "⚡Charging", ChargeState.Full => "Full", _ => "" };
     }
 
     void RefreshLive()
