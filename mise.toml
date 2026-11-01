@@ -12,8 +12,10 @@ run = "dotnet publish src/DualSenseEmu.Gui -c Release -r win-x64 --self-containe
 [tasks."dev:release"]
 description = "Build the installer (releases/DualSenseEmu-win-Setup.exe) and update packages. Usage: mise run dev:release 0.2.0"
 usage = 'arg "<version>" help="Release version, e.g. 0.2.0"'
+# mise passes the usage arg as $env:usage_version; pwsh so the same syntax works in every step
+shell = "pwsh -NoProfile -Command"
 run = [
   "dotnet tool restore",
-  "dotnet publish src/DualSenseEmu.Gui -c Release -r win-x64 --self-contained true --nologo -o publish -p:Version={{arg(name=\"version\")}}",
-  "dotnet vpk pack --packId DualSenseEmu --packVersion {{arg(name=\"version\")}} --packDir publish --mainExe DualSenseEmu.exe --packTitle \"DualSense Emulator\" --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases",
+  "dotnet publish src/DualSenseEmu.Gui -c Release -r win-x64 --self-contained true --nologo -o publish -p:Version=$env:usage_version",
+  "dotnet vpk pack --packId DualSenseEmu --packVersion $env:usage_version --runtime win-x64 --packDir publish --mainExe DualSenseEmu.exe --packTitle 'DualSense Emulator' --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases",
 ]
