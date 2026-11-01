@@ -9,7 +9,20 @@ mise exec -- dotnet run --project src\DualSenseEmu.Gui -c Release   # window + t
 mise exec -- dotnet run --project src\DualSenseEmu.App -c Release   # console only, Ctrl+C to stop
 ```
 
-Needs the ViGEmBus driver. The app keeps retrying, so it can start before the pad is switched on.
+Needs the ViGEmBus driver; if it is missing the app shows an "Install ViGEmBus driver" button.
+The app keeps retrying, so it can start before the pad is switched on.
+
+## Installer (Velopack)
+
+```powershell
+mise run dev:release 0.1.0   # -> releases\DualSenseEmu-win-Setup.exe (+ portable zip and update packages)
+```
+
+- Per-user install to `%LOCALAPPDATA%\DualSenseEmu`, no admin, Start menu shortcut, uninstall from Windows Settings.
+- Installing puts the exe in a stable folder, so "Start with Windows" keeps working across updates.
+- Auto-update: on start the app checks GitHub Releases and applies a newer version when it exits.
+  Publish the `releases\` files to a GitHub Release (e.g. `gh release create v0.2.0 releases\*`).
+  Only works if the repo is public: update checks on a private repo fail silently.
 
 ## Standalone exe
 

@@ -60,8 +60,11 @@ public static class HidHide
         return string.Join(" && ", cmds);
     }
 
-    public static Task<bool> InstallAsync() => Task.Run(() =>
-        RunElevated("winget", "install --id Nefarius.HidHide -e --accept-package-agreements --accept-source-agreements"));
+    public const string HidHidePackage = "Nefarius.HidHide", ViGEmBusPackage = "ViGEm.ViGEmBus";
+
+    /// <summary>Installs a driver package with winget (one UAC prompt). Used for HidHide and ViGEmBus.</summary>
+    public static Task<bool> InstallAsync(string wingetId = HidHidePackage) => Task.Run(() =>
+        RunElevated("winget", $"install --id {wingetId} -e --accept-package-agreements --accept-source-agreements"));
 
     static bool RunElevated(string file, string args)
     {

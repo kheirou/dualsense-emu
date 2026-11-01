@@ -3,4 +3,6 @@ obj/
 *.user
 .vs/
 dist/
+publish/
+releases/
 

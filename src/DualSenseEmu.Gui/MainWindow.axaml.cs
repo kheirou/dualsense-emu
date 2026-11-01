@@ -26,12 +26,17 @@ public partial class MainWindow : Window
         _xboxPad = new PadMap(XboxCanvas, xbox: true);
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
-            var colour = s.State switch { EmuState.Running => Green, EmuState.Error => Red, EmuState.Waiting => Amber, _ => Grey };
+            var colour = s.State switch { EmuState.Running => Green, EmuState.Error or EmuState.DriverMissing => Red, EmuState.Waiting => Amber, _ => Grey };
             StatusDot.Fill = colour;
             StatusWord.Foreground = colour;
-            StatusWord.Text = s.State switch { EmuState.Running => "EMULATING", EmuState.Waiting => "WAITING", EmuState.Error => "ERROR", _ => "OFF" };
+            StatusWord.Text = s.State switch
+            {
+                EmuState.Running => "EMULATING", EmuState.Waiting => "WAITING", EmuState.Error => "ERROR",
+                EmuState.DriverMissing => "NO DRIVER", _ => "OFF",
+            };
             StatusText.Text = s.State == EmuState.Running ? "games see an Xbox 360 pad" : s.Message;
-            bool active = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error; // it keeps retrying until stopped
+            InstallVigem.IsVisible = s.State == EmuState.DriverMissing;
+            bool active = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error or EmuState.DriverMissing; // it keeps retrying until stopped
             StartStop.Content = active ? "STOP EMULATION" : "START EMULATION";
             SegEmulate.Classes.Set("on", active);
             SegOff.Classes.Set("amber", !active);
@@ -153,6 +158,15 @@ public partial class MainWindow : Window
         await RefreshHideState();
         if (!ok) HideText.Text = "Not changed: approval declined, or no DualSense connected.";
         HideToggle.IsEnabled = true;
+    }
+
+    // the emulator keeps retrying, so once the driver is in, it picks it up within 2 s
+    async void OnInstallVigem(object? sender, RoutedEventArgs e)
+    {
+        InstallVigem.IsEnabled = false;
+        StatusText.Text = "Installing ViGEmBus (approve the prompt)...";
+        if (!await HidHide.InstallAsync(HidHide.ViGEmBusPackage)) StatusText.Text = "ViGEmBus install failed or was cancelled.";
+        InstallVigem.IsEnabled = true;
     }
 
     async void OnInstallHidHide(object? sender, RoutedEventArgs e)
