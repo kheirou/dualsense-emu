@@ -234,31 +234,28 @@
         </TabItem>
         <TabItem Header="Buttons">
           <Border Classes="card" Margin="0,14,0,0">
-              <ScrollViewer MaxHeight="300" >
-                <StackPanel x:Name="RemapPanel" Spacing="4" />
-              </ScrollViewer>
+              <StackPanel Spacing="12">
+                <TextBlock Text="1. Pick a DualSense button   (amber = remapped)" Classes="dim" />
+                <WrapPanel x:Name="RemapPanel" Orientation="Horizontal" />
+                <TextBlock x:Name="RemapTitle" Classes="label" />
+                <WrapPanel x:Name="RemapTargets" Orientation="Horizontal" />
+              </StackPanel>
           </Border>
         </TabItem>
         <TabItem Header="Lightbar">
           <Border Classes="card" Margin="0,14,0,0">
             <StackPanel Spacing="10">
               <TextBlock Text="Lightbar shows" Classes="label" />
-              <ComboBox x:Name="LightModeBox" Width="220" SelectionChanged="OnLightMode">
-                <ComboBoxItem Content="Static colour" />
-                <ComboBoxItem Content="Battery level (green / amber / red)" />
-                <ComboBoxItem Content="Charging status" />
-              </ComboBox>
-              <TextBlock Text="Player LEDs" Classes="label" />
-              <ComboBox x:Name="PlayerBox" Width="220" SelectionChanged="OnPlayer">
-                <ComboBoxItem Content="Leave as is" />
-                <ComboBoxItem Content="Player 1" />
-                <ComboBoxItem Content="Player 2" />
-                <ComboBoxItem Content="Player 3" />
-                <ComboBoxItem Content="Player 4" />
-              </ComboBox>
-              <StackPanel x:Name="StaticPanel" Spacing="10">
-                <TextBlock Text="Static colour" Classes="label" />
-                <Border x:Name="LightSwatch" Height="36" CornerRadius="8" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
+              <WrapPanel x:Name="LightModePanel" Orientation="Horizontal">
+                <RadioButton GroupName="lm" Tag="0" Content="Static colour" Click="OnLightMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="lm" Tag="1" Content="Battery level (green / amber / red)" Click="OnLightMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="lm" Tag="2" Content="Charging status" Click="OnLightMode" Margin="0,0,14,0" />
+              </WrapPanel>
+              <StackPanel x:Name="StaticPanel" Spacing="8">
+                <TextBlock Text="Presets" Classes="dim" />
+                <WrapPanel x:Name="PresetPanel" Orientation="Horizontal" />
+                <TextBlock Text="Make your own" Classes="dim" />
+                <Border x:Name="LightSwatch" Height="30" CornerRadius="8" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
                 <Slider x:Name="RedSlider" Minimum="0" Maximum="255" Foreground="#FF5C5C" ValueChanged="OnRgb" />
                 <Slider x:Name="GreenSlider" Minimum="0" Maximum="255" Foreground="#3DDC84" ValueChanged="OnRgb" />
                 <Slider x:Name="BlueSlider" Minimum="0" Maximum="255" Foreground="#6C8CFF" ValueChanged="OnRgb" />
@@ -267,6 +264,19 @@
                   <Button Content="Use pad's own colour" Click="OnLightbarClear" />
                 </StackPanel>
               </StackPanel>
+              <TextBlock Text="Player LEDs show" Classes="label" Margin="0,8,0,0" />
+              <WrapPanel x:Name="PlayerModePanel" Orientation="Horizontal">
+                <RadioButton GroupName="pm" Tag="0" Content="Leave as is" Click="OnPlayerMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="pm" Tag="1" Content="Player number" Click="OnPlayerMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="pm" Tag="2" Content="Battery level (1-5 LEDs)" Click="OnPlayerMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="pm" Tag="3" Content="Charging (all lit)" Click="OnPlayerMode" Margin="0,0,14,0" />
+              </WrapPanel>
+              <WrapPanel x:Name="PlayerNumPanel" Orientation="Horizontal">
+                <RadioButton GroupName="pn" Tag="1" Content="Player 1" Click="OnPlayerNum" Margin="0,0,14,0" />
+                <RadioButton GroupName="pn" Tag="2" Content="Player 2" Click="OnPlayerNum" Margin="0,0,14,0" />
+                <RadioButton GroupName="pn" Tag="3" Content="Player 3" Click="OnPlayerNum" Margin="0,0,14,0" />
+                <RadioButton GroupName="pn" Tag="4" Content="Player 4" Click="OnPlayerNum" Margin="0,0,14,0" />
+              </WrapPanel>
             </StackPanel>
           </Border>
         </TabItem>
