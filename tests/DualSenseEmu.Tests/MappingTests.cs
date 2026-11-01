@@ -223,4 +223,26 @@ public class MappingTests
         Assert.Equal("{\"state\":\"waiting\",\"transport\":\"none\",\"battery\":null,\"charge\":null}",
             DualSenseEmu.Device.StatusFile.ToJson(DualSenseEmu.Device.EmuState.Waiting, DualSenseEmu.Device.Transport.None, null));
     }
+
+    [Fact]
+    public void Lightbar_modes_resolve_colour_from_battery_and_charge()
+    {
+        DualSenseState Ds(int pct, ChargeState c) => new(128, 128, 128, 128, 0, 0, DsButtons.None, pct, c);
+        var bat = new MapProfile { LightbarMode = LightbarMode.Battery };
+        Assert.Equal(((byte)0x3D, (byte)0xDC, (byte)0x84), OutputReport.Resolve(bat, Ds(80, ChargeState.Discharging)));
+        Assert.Equal(((byte)0xFF, (byte)0x3B, (byte)0x30), OutputReport.Resolve(bat, Ds(10, ChargeState.Discharging)));
+        var chg = new MapProfile { LightbarMode = LightbarMode.Charging, Lightbar = "#102030" };
+        Assert.Equal(((byte)0xFF, (byte)0xB1, (byte)0x3D), OutputReport.Resolve(chg, Ds(50, ChargeState.Charging)));
+        Assert.Equal(((byte)0x10, (byte)0x20, (byte)0x30), OutputReport.Resolve(chg, Ds(50, ChargeState.Discharging)));
+        Assert.Null(OutputReport.Resolve(new MapProfile(), null));
+    }
+
+    [Fact]
+    public void Player_leds_set_flag_and_pattern()
+    {
+        var r = OutputReport.Build(false, 0, 0, (1, 2, 3), player: 2);
+        Assert.Equal(0x10 | 0x04, r[2]);   // both control-enable bits survive
+        Assert.Equal(0x0A, r[44]);
+        Assert.Equal(0, OutputReport.Build(false, 0, 0, null)[44]);
+    }
 }
