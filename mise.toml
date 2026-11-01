@@ -15,6 +15,8 @@ usage = 'arg "<version>" help="Release version, e.g. 0.2.0"'
 # mise passes the usage arg as $env:usage_version; pwsh so the same syntax works in every step
 shell = "pwsh -NoProfile -Command"
 run = [
+  "if ($env:usage_version -notmatch '^\\d+\\.\\d+\\.\\d+$') { throw 'version must be x.y.z' }",
+  "if (Test-Path publish) { Remove-Item publish -Recurse -Force }",
   "dotnet tool restore",
   "dotnet publish src/DualSenseEmu.Gui -c Release -r win-x64 --self-contained true --nologo -o publish -p:Version=$env:usage_version",
   "dotnet vpk pack --packId DualSenseEmu --packVersion $env:usage_version --runtime win-x64 --packDir publish --mainExe DualSenseEmu.exe --packTitle 'DualSense Emulator' --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases",
