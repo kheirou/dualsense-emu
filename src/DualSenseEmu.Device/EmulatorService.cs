@@ -140,15 +140,15 @@ public sealed class EmulatorService : IDisposable
 
             // games' rumble (large = low-frequency motor) goes straight to the DualSense; sent only when it changes
             byte left = 0, right = 0, seq = 0;
-            ((byte, byte, byte)?, byte) lastLook = default;
+            ((byte, byte, byte)?, byte?) lastLook = default;
             var sendLock = new object();
             void Send()
             {
                 lock (sendLock)
                 {
                     var p = Profile;
-                    lastLook = (OutputReport.Resolve(p, Latest?.Ds), p.PlayerNumber);
-                    try { stream.Write(OutputReport.Build(bluetooth, left, right, lastLook.Item1, (byte)(seq++ & 0x0F), p.PlayerNumber)); }
+                    lastLook = (OutputReport.Resolve(p, Latest?.Ds), OutputReport.ResolveLeds(p, Latest?.Ds));
+                    try { stream.Write(OutputReport.Build(bluetooth, left, right, lastLook.Item1, (byte)(seq++ & 0x0F), lastLook.Item2)); }
                     catch (Exception) { /* pad vanished; the read loop notices and reconnects */ }
                 }
             }
@@ -166,7 +166,7 @@ public sealed class EmulatorService : IDisposable
                 var x = X360Mapper.Map(ds, Profile);
                 Latest = new Snapshot(ds, x);
                 var p = Profile; // battery or charge changed the lightbar colour, or the user changed mode / player
-                if ((OutputReport.Resolve(p, ds), p.PlayerNumber) != lastLook) Send();
+                if ((OutputReport.Resolve(p, ds), OutputReport.ResolveLeds(p, ds)) != lastLook) Send();
                 Submit(pad, x);
             }
         }

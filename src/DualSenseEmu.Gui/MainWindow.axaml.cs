@@ -107,8 +107,11 @@ public partial class MainWindow : Window
         InvertYBox.IsChecked = p.InvertLeftY && p.InvertRightY;
         SwapBox.IsChecked = p.SwapSticks;
         LightbarBox.Text = p.Lightbar ?? "";
-        LightModeBox.SelectedIndex = (int)p.LightbarMode;
-        PlayerBox.SelectedIndex = p.PlayerNumber;
+        Pick(LightModePanel, (int)p.LightbarMode);
+        Pick(PlayerModePanel, (int)p.PlayerMode);
+        Pick(PlayerNumPanel, p.PlayerNumber);
+        PlayerNumPanel.IsVisible = p.PlayerMode == PlayerLedMode.Player;
+        if (PresetPanel.Children.Count == 0) BuildPresets();
         StaticPanel.IsVisible = p.LightbarMode == LightbarMode.Static;
         ShowColour(p.Lightbar);
         BuildRemap(p);
@@ -135,33 +138,50 @@ public partial class MainWindow : Window
 
 
     static readonly string[] XboxTargets = Enum.GetNames<X360Buttons>().Where(n => n != "None").ToArray();
+    static readonly IBrush TileOn = new SolidColorBrush(Color.Parse("#3FE0FF"));
+    static readonly IBrush TileOff = new SolidColorBrush(Color.Parse("#33456A"));
+    DsButtons _remapSel = DsButtons.Cross;
 
-    // one row per DualSense button: (default) / None / any Xbox button. Choosing (default) drops the override.
+    X360Buttons? RemapOf(DsButtons b)
+        => _emu.Profile.Remap is not null && _emu.Profile.Remap.TryGetValue(b, out var t) ? t : null;
+
+    // tiles show "Cross -> A"; pick one, then choose its target from the always-visible list below
     void BuildRemap(MapProfile p)
     {
         RemapPanel.Children.Clear();
         foreach (var b in Enum.GetValues<DsButtons>().Where(b => b != DsButtons.None))
         {
-            var def = X360Mapper.DefaultFor(b);
-            var combo = new ComboBox { Width = 150, Tag = b, ItemsSource = new[] { def is null ? "(unmapped)" : $"(default: {def})", "None" }.Concat(XboxTargets).ToArray() };
-            combo.SelectedIndex = p.Remap is not null && p.Remap.TryGetValue(b, out var t)
-                ? (t == X360Buttons.None ? 1 : 2 + Array.IndexOf(XboxTargets, t.ToString())) : 0;
-            combo.SelectionChanged += OnRemap;
-            var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            row.Children.Add(new TextBlock { Text = b.ToString(), Width = 80, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
-            row.Children.Add(combo);
-            RemapPanel.Children.Add(row);
+            var over = RemapOf(b);
+            string target = over is null ? (X360Mapper.DefaultFor(b)?.ToString() ?? "-") : over == X360Buttons.None ? "off" : over.ToString()!;
+            var text = new StackPanel();
+            text.Children.Add(new TextBlock { Text = b.ToString(), FontWeight = FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center });
+            text.Children.Add(new TextBlock { Text = "→ " + target, FontSize = 12, Foreground = over is null ? Grey : Amber, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center });
+            var tile = new Button { Tag = b, Width = 104, Height = 48, Margin = new Thickness(0, 0, 8, 8), Content = text,
+                BorderThickness = new Thickness(1.5), BorderBrush = b == _remapSel ? TileOn : TileOff };
+            tile.Click += (_, _) => { _remapSel = b; BuildRemap(_emu.Profile); };
+            RemapPanel.Children.Add(tile);
         }
+        RemapTitle.Text = $"2. {_remapSel} acts as:";
+        RemapTargets.Children.Clear();
+        var cur = RemapOf(_remapSel);
+        var def = X360Mapper.DefaultFor(_remapSel);
+        AddTarget(def is null ? "(unmapped)" : $"(default: {def})", null, cur is null);
+        AddTarget("Off", X360Buttons.None, cur == X360Buttons.None);
+        foreach (var n in XboxTargets) { var t = Enum.Parse<X360Buttons>(n); AddTarget(n, t, cur == t); }
     }
 
-    void OnRemap(object? sender, SelectionChangedEventArgs e)
+    void AddTarget(string label, X360Buttons? target, bool selected)
     {
-        if (_loadingTuning || sender is not ComboBox { Tag: DsButtons b } c) return;
-        var map = new Dictionary<DsButtons, X360Buttons>(_emu.Profile.Remap ?? []);
-        if (c.SelectedIndex <= 0) map.Remove(b);
-        else map[b] = c.SelectedIndex == 1 ? X360Buttons.None : Enum.Parse<X360Buttons>(XboxTargets[c.SelectedIndex - 2]);
-        _emu.Profile = _emu.Profile with { Remap = map.Count == 0 ? null : map };
-        _emu.Profile.Save();
+        var r = new RadioButton { Content = label, GroupName = "rt", IsChecked = selected, Margin = new Thickness(0, 0, 14, 4) };
+        r.Click += (_, _) =>
+        {
+            var map = new Dictionary<DsButtons, X360Buttons>(_emu.Profile.Remap ?? []);
+            if (target is null) map.Remove(_remapSel); else map[_remapSel] = target.Value;
+            _emu.Profile = _emu.Profile with { Remap = map.Count == 0 ? null : map };
+            _emu.Profile.Save();
+            BuildRemap(_emu.Profile);
+        };
+        RemapTargets.Children.Add(r);
     }
 
     void SetLightbar(string? hex, bool fromPicker)
@@ -179,22 +199,56 @@ public partial class MainWindow : Window
         _loadingTuning = false;
     }
 
-    void OnLightMode(object? sender, SelectionChangedEventArgs e)
+    static void Pick(Panel panel, int value)
     {
-        if (_loadingTuning || LightModeBox.SelectedIndex < 0) return;
-        var mode = (LightbarMode)LightModeBox.SelectedIndex;
+        foreach (var r in panel.Children.OfType<RadioButton>()) r.IsChecked = int.Parse((string)r.Tag!) == value;
+    }
+
+    static int Chosen(object? sender) => int.Parse((string)((RadioButton)sender!).Tag!);
+
+    void OnLightMode(object? sender, RoutedEventArgs e)
+    {
+        var mode = (LightbarMode)Chosen(sender);
         StaticPanel.IsVisible = mode == LightbarMode.Static;
         _emu.Profile = _emu.Profile with { LightbarMode = mode };
         _emu.Profile.Save();
         _emu.RefreshOutput();
     }
 
-    void OnPlayer(object? sender, SelectionChangedEventArgs e)
+    void OnPlayerMode(object? sender, RoutedEventArgs e)
     {
-        if (_loadingTuning || PlayerBox.SelectedIndex < 0) return;
-        _emu.Profile = _emu.Profile with { PlayerNumber = (byte)PlayerBox.SelectedIndex };
+        var mode = (PlayerLedMode)Chosen(sender);
+        PlayerNumPanel.IsVisible = mode == PlayerLedMode.Player;
+        byte n = _emu.Profile.PlayerNumber == 0 ? (byte)1 : _emu.Profile.PlayerNumber;
+        _emu.Profile = _emu.Profile with { PlayerMode = mode, PlayerNumber = n };
+        _emu.Profile.Save();
+        Pick(PlayerNumPanel, n);
+        _emu.RefreshOutput();
+    }
+
+    void OnPlayerNum(object? sender, RoutedEventArgs e)
+    {
+        _emu.Profile = _emu.Profile with { PlayerNumber = (byte)Chosen(sender) };
         _emu.Profile.Save();
         _emu.RefreshOutput();
+    }
+
+    static readonly (string Name, string Hex)[] Presets =
+    [
+        ("Red", "#FF3B30"), ("Orange", "#FF9500"), ("Yellow", "#FFD60A"), ("Green", "#3DDC84"), ("Cyan", "#3FE0FF"),
+        ("Blue", "#3B6CFF"), ("Purple", "#9B5CFF"), ("Pink", "#FF5CA8"), ("White", "#FFFFFF"),
+    ];
+
+    void BuildPresets()
+    {
+        foreach (var (name, hex) in Presets)
+        {
+            var b = new Button { Width = 40, Height = 40, CornerRadius = new CornerRadius(20), Margin = new Thickness(0, 0, 8, 8),
+                Background = new SolidColorBrush(Color.Parse(hex)), BorderBrush = TileOff, BorderThickness = new Thickness(1.5) };
+            ToolTip.SetTip(b, name);
+            b.Click += (_, _) => SetLightbar(hex, fromPicker: false);
+            PresetPanel.Children.Add(b);
+        }
     }
 
     void ShowColour(string? hex)

@@ -7,7 +7,7 @@ public static class OutputReport
     const byte UsbId = 0x02, BtId = 0x31;
 
     /// <param name="rgb">Lightbar colour, or null to leave it alone.</param>
-    public static byte[] Build(bool bluetooth, byte left, byte right, (byte R, byte G, byte B)? rgb, byte btSeq = 0, byte player = 0)
+    public static byte[] Build(bool bluetooth, byte left, byte right, (byte R, byte G, byte B)? rgb, byte btSeq = 0, byte? leds = null)
     {
         var r = new byte[bluetooth ? BtLength : UsbLength];
         int o; // index of valid_flag0
@@ -17,10 +17,10 @@ public static class OutputReport
         r[o] = 0x01 | 0x02;       // compatible vibration + haptics select
         r[o + 2] = right;         // small motor
         r[o + 3] = left;          // big motor
-        if (player is >= 1 and <= 4)
+        if (leds is { } mask)
         {
             r[o + 1] |= 0x10;     // player indicator control enable
-            r[o + 43] = PlayerLeds[player - 1];
+            r[o + 43] = (byte)(mask & 0x1F);
         }
         if (rgb is var (red, green, blue))
         {
@@ -40,6 +40,15 @@ public static class OutputReport
 
     // the five LEDs left to right; player N lights the centre then spreads outwards
     static readonly byte[] PlayerLeds = [0x04, 0x0A, 0x15, 0x1B];
+
+    /// <summary>Bit mask of the five player LEDs to light now; null = leave them alone.</summary>
+    public static byte? ResolveLeds(MapProfile p, DualSenseState? ds) => p.PlayerMode switch
+    {
+        PlayerLedMode.Player when p.PlayerNumber is >= 1 and <= 4 => PlayerLeds[p.PlayerNumber - 1],
+        PlayerLedMode.Battery when ds is { BatteryPercent: >= 0 } s => (byte)((1 << Math.Clamp((s.BatteryPercent + 19) / 20, 1, 5)) - 1),
+        PlayerLedMode.Charging when ds is { } s => s.Charge is ChargeState.Charging or ChargeState.Full ? (byte)0x1F : (byte)0,
+        _ => null,
+    };
 
     static readonly (byte, byte, byte) Green = (0x3D, 0xDC, 0x84), Amber = (0xFF, 0xB1, 0x3D), Red = (0xFF, 0x3B, 0x30);
 

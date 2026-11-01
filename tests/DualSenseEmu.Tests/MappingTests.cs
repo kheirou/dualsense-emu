@@ -240,9 +240,23 @@ public class MappingTests
     [Fact]
     public void Player_leds_set_flag_and_pattern()
     {
-        var r = OutputReport.Build(false, 0, 0, (1, 2, 3), player: 2);
+        var r = OutputReport.Build(false, 0, 0, (1, 2, 3), leds: 0x0A);
         Assert.Equal(0x10 | 0x04, r[2]);   // both control-enable bits survive
         Assert.Equal(0x0A, r[44]);
         Assert.Equal(0, OutputReport.Build(false, 0, 0, null)[44]);
+    }
+
+    [Fact]
+    public void Player_led_modes()
+    {
+        DualSenseState Ds(int pct, ChargeState c) => new(128, 128, 128, 128, 0, 0, DsButtons.None, pct, c);
+        Assert.Null(OutputReport.ResolveLeds(new MapProfile(), null));
+        Assert.Equal((byte)0x15, OutputReport.ResolveLeds(new MapProfile { PlayerMode = PlayerLedMode.Player, PlayerNumber = 3 }, null));
+        var bat = new MapProfile { PlayerMode = PlayerLedMode.Battery };
+        Assert.Equal((byte)0x01, OutputReport.ResolveLeds(bat, Ds(15, ChargeState.Discharging)));
+        Assert.Equal((byte)0x1F, OutputReport.ResolveLeds(bat, Ds(100, ChargeState.Discharging)));
+        var chg = new MapProfile { PlayerMode = PlayerLedMode.Charging };
+        Assert.Equal((byte)0x1F, OutputReport.ResolveLeds(chg, Ds(50, ChargeState.Charging)));
+        Assert.Equal((byte)0, OutputReport.ResolveLeds(chg, Ds(50, ChargeState.Discharging)));
     }
 }
