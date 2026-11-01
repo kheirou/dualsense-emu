@@ -1,2 +1,6 @@
 [tools]
 dotnet = "9"
+
+[tasks."dev:ci"]
+description = "Build and test (local merge gate)"
+run = ["dotnet build -c Release --nologo", "dotnet test -c Release --no-build --nologo"]
