@@ -16,6 +16,8 @@ public sealed record MapProfile
     public bool SwapSticks { get; init; }
     /// <summary>Triggers read 0 below this (0-254); the rest is rescaled to the full range.</summary>
     public byte TriggerThreshold { get; init; }
+    /// <summary>Lightbar colour as "#RRGGBB"; null leaves the pad's own colour.</summary>
+    public string? Lightbar { get; init; }
     /// <summary>Overrides of the default button map; a DualSense button mapped to None is disabled.
     /// Touchpad and Mute are unmapped by default, so e.g. "Touchpad": "Guide" makes them useful.</summary>
     public Dictionary<DsButtons, X360Buttons>? Remap { get; init; }

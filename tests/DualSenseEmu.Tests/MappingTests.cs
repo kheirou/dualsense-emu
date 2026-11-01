@@ -177,4 +177,33 @@ public class MappingTests
         }
         finally { File.Delete(f); }
     }
+
+    [Fact]
+    public void Output_report_usb_has_rumble_and_lightbar()
+    {
+        var r = OutputReport.Build(false, left: 200, right: 50, (1, 2, 3));
+        Assert.Equal(OutputReport.UsbLength, r.Length);
+        Assert.Equal(0x02, r[0]);
+        Assert.Equal((50, 200), (r[3], r[4]));
+        Assert.Equal(new byte[] { 1, 2, 3 }, r[45..48]);
+        Assert.Equal(0, OutputReport.Build(false, 0, 0, null)[2]); // no lightbar flag
+    }
+
+    [Fact]
+    public void Output_report_bluetooth_has_valid_crc()
+    {
+        var r = OutputReport.Build(true, 9, 8, null, btSeq: 3);
+        Assert.Equal(OutputReport.BtLength, r.Length);
+        Assert.Equal((0x31, 0x30, 0x10), (r[0], r[1], r[2]));
+        Assert.Equal((9, 8), (r[6], r[5]));
+        Assert.Equal(OutputReport.Crc32(r.AsSpan(0, 74)), BitConverter.ToUInt32(r, 74));
+    }
+
+    [Fact]
+    public void Crc32_matches_zlib_and_colour_parses()
+    {
+        Assert.Equal(0x63da9f12U, OutputReport.Crc32("123456789"u8)); // zlib.crc32(0xA2 + body)
+        Assert.Equal((255, 128, 0), OutputReport.ParseColour("#FF8000") is var (r, g, b) ? (r, g, b) : (-1, -1, -1));
+        Assert.Null(OutputReport.ParseColour("nope"));
+    }
 }

@@ -133,6 +133,20 @@ public sealed class EmulatorService : IDisposable
 
             Report(EmuState.Running, $"Emulating: games see an Xbox 360 pad ({(bluetooth ? "Bluetooth" : "USB")})");
 
+            // games' rumble (large = low-frequency motor) goes straight to the DualSense; sent only when it changes
+            byte left = 0, right = 0, seq = 0;
+            var sendLock = new object();
+            void Send()
+            {
+                lock (sendLock)
+                {
+                    try { stream.Write(OutputReport.Build(bluetooth, left, right, OutputReport.ParseColour(Profile.Lightbar), (byte)(seq++ & 0x0F))); }
+                    catch (Exception) { /* pad vanished; the read loop notices and reconnects */ }
+                }
+            }
+            pad.FeedbackReceived += (_, e) => { left = e.LargeMotor; right = e.SmallMotor; Send(); };
+            Send(); // applies the lightbar colour right away
+
             var buf = new byte[device.GetMaxInputReportLength()];
             while (!ct.IsCancellationRequested)
             {
