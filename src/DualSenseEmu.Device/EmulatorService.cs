@@ -6,7 +6,7 @@ using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace DualSenseEmu.Device;
 
-public enum EmuState { Stopped, Waiting, Running, Error }
+public enum EmuState { Stopped, Waiting, Running, Error, DriverMissing }
 
 public enum Transport { None, Usb, Bluetooth }
 
@@ -67,8 +67,10 @@ public sealed class EmulatorService : IDisposable
             try { RunOnce(ct); }
             catch (Exception e)
             {
-                Report(EmuState.Error, e is Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException
-                    ? "ViGEmBus driver not available. Retrying..." : $"Controller error: {e.Message}. Retrying...");
+                if (e is Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException)
+                    Report(EmuState.DriverMissing, "ViGEmBus driver is not installed.");
+                else
+                    Report(EmuState.Error, $"Controller error: {e.Message}. Retrying...");
             }
             ct.WaitHandle.WaitOne(2000);
         }
