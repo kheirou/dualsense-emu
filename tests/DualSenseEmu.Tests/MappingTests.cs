@@ -98,6 +98,23 @@ public class MappingTests
         Assert.Equal(65, Parse(bt).BatteryPercent);
     }
 
+    // A real Bluetooth report captured from a DualSense lying idle on charge (2026-11-01). Unlike the made-up
+    // arrays above, this fails if any offset is wrong. shortcut: no wired (USB) capture yet.
+    const string RealBtIdle =
+        "31C1807F827D00000108000000F442AD530000F9FF010086FE4A1FD8015A6CDA891480000000800000000009090000000000CE70DA89101000FCCE93C926978943000000000000000000B4CAC2EC";
+
+    [Fact]
+    public void Real_bluetooth_report_parses_to_an_idle_charging_pad()
+    {
+        var s = Parse(Convert.FromHexString(RealBtIdle));
+        Assert.Equal(DsButtons.None, s.Buttons);                         // hat 8 = d-pad released, nothing pressed
+        Assert.InRange(s.Lx, 120, 136); Assert.InRange(s.Ly, 120, 136);  // resting sticks sit near the centre (128)
+        Assert.InRange(s.Rx, 120, 136); Assert.InRange(s.Ry, 120, 136);
+        Assert.Equal(0, s.L2); Assert.Equal(0, s.R2);
+        Assert.Equal(5, s.BatteryPercent);                               // status byte 0x10 = level 0, charging
+        Assert.Equal(ChargeState.Charging, s.Charge);
+    }
+
     [Fact]
     public void Short_report_has_unknown_battery()
     {

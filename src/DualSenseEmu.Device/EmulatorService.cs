@@ -6,7 +6,7 @@ using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace DualSenseEmu.Device;
 
-public enum EmuState { Stopped, Running, Error }
+public enum EmuState { Stopped, Waiting, Running, Error }
 
 public enum Transport { None, Usb, Bluetooth }
 
@@ -49,9 +49,33 @@ public sealed class EmulatorService : IDisposable
         _task?.Wait(3000);
     }
 
-    void Report(EmuState s, string msg) => StatusChanged?.Invoke(new EmuStatus(s, msg));
+    EmuStatus? _last;
 
+    void Report(EmuState s, string msg)
+    {
+        var status = new EmuStatus(s, msg);
+        if (status == _last) return; // the retry loop would otherwise repeat the same message every 2 s
+        _last = status;
+        StatusChanged?.Invoke(status);
+    }
+
+    /// <summary>Keep trying until stopped: the pad may be off at login, or drop off Bluetooth mid-game.</summary>
     void Run(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { RunOnce(ct); }
+            catch (Exception e)
+            {
+                Report(EmuState.Error, e is Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException
+                    ? "ViGEmBus driver not available. Retrying..." : $"Controller error: {e.Message}. Retrying...");
+            }
+            ct.WaitHandle.WaitOne(2000);
+        }
+        Report(EmuState.Stopped, "Stopped");
+    }
+
+    void RunOnce(CancellationToken ct)
     {
         HidStream? stream = null;
         IXbox360Controller? pad = null;
@@ -60,7 +84,7 @@ public sealed class EmulatorService : IDisposable
         {
             var device = DeviceList.Local.GetHidDevices()
                 .FirstOrDefault(d => d.VendorID == SonyVid && DualSensePids.Contains(d.ProductID));
-            if (device is null) { Report(EmuState.Error, "No DualSense found. Connect it by USB or Bluetooth."); return; }
+            if (device is null) { Report(EmuState.Waiting, "Waiting for a DualSense (USB or Bluetooth)..."); return; }
 
             stream = device.Open();
             stream.ReadTimeout = 500; // lets Stop() take effect even if the pad goes quiet
@@ -97,12 +121,6 @@ public sealed class EmulatorService : IDisposable
                 pad.SetAxisValue(Xbox360Axis.RightThumbY, x.RightY);
                 pad.SubmitReport();
             }
-            Report(EmuState.Stopped, "Stopped");
-        }
-        catch (Exception e) when (e is IOException or Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException or UnauthorizedAccessException)
-        {
-            Report(EmuState.Error, e is Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException
-                ? "ViGEmBus driver not available." : $"Controller error: {e.Message}");
         }
         finally
         {

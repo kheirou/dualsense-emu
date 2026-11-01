@@ -34,7 +34,7 @@ public static class X360Mapper
         Set(DsButtons.DpadUp, X360Buttons.DpadUp);
         Set(DsButtons.DpadDown, X360Buttons.DpadDown);
         Set(DsButtons.DpadLeft, X360Buttons.DpadLeft);
-        if (s.DpadRight) b |= X360Buttons.DpadRight;
+        Set(DsButtons.DpadRight, X360Buttons.DpadRight);
 
         return new X360State(b, s.L2, s.R2,
             Axis(s.Lx), Axis(s.Ly, invert: true), Axis(s.Rx), Axis(s.Ry, invert: true));
