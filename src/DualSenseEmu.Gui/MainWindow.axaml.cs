@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using DualSenseEmu.Core;
 using DualSenseEmu.Device;
+using Microsoft.Win32;
 
 namespace DualSenseEmu.Gui;
 
@@ -14,20 +15,15 @@ public partial class MainWindow : Window
     static readonly IBrush Green = new SolidColorBrush(Color.Parse("#3DDC84"));
     static readonly IBrush Red = new SolidColorBrush(Color.Parse("#FF5C5C"));
     static readonly IBrush Grey = new SolidColorBrush(Color.Parse("#8A93A6"));
-    static readonly IBrush ChipOff = new SolidColorBrush(Color.Parse("#12141A"));
-    static readonly IBrush ChipOn = new SolidColorBrush(Color.Parse("#6C8CFF"));
-    static readonly IBrush TextOff = new SolidColorBrush(Color.Parse("#8A93A6"));
-    static readonly IBrush TextOn = Brushes.White;
-    const double PadSize = 120, DotSize = 18;
-
-    readonly Dictionary<string, Border> _chips = new();
+    readonly PadMap _dsPad, _xboxPad;
     readonly EmulatorService _emu = new();
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
     public MainWindow()
     {
         InitializeComponent();
-        BuildChips();
+        _dsPad = new PadMap(DsCanvas, xbox: false);
+        _xboxPad = new PadMap(XboxCanvas, xbox: true);
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
             StatusText.Text = s.Message;
@@ -36,9 +32,42 @@ public partial class MainWindow : Window
         });
         _timer.Tick += (_, _) => RefreshLive();
         _timer.Start();
-        Closing += (_, _) => { _timer.Stop(); _emu.Dispose(); };
+        Closing += (_, e) =>
+        {
+            if (_exiting) return;
+            e.Cancel = true; // keep emulating in the tray
+            Hide();
+        };
         Opened += async (_, _) => await RefreshHideState();
+        RefreshStartup();
         _emu.Start(); // emulate straight away; Stop is one click
+    }
+
+    const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    const string RunValue = "DualSenseEmu";
+    bool _exiting;
+
+    public void ShowFromTray() { Show(); WindowState = WindowState.Normal; Activate(); }
+
+    public void ExitApp() { _exiting = true; _timer.Stop(); _emu.Dispose(); }
+
+    // Under `dotnet run` the process is dotnet.exe: registering that for startup would be wrong.
+    static bool IsPublishedExe =>
+        !string.Equals(System.IO.Path.GetFileNameWithoutExtension(Environment.ProcessPath), "dotnet", StringComparison.OrdinalIgnoreCase);
+
+    void RefreshStartup()
+    {
+        StartupToggle.IsEnabled = IsPublishedExe;
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey);
+        StartupToggle.IsChecked = key?.GetValue(RunValue) is string;
+        if (!IsPublishedExe) ToolTip.SetTip(StartupToggle, "Run the published DualSenseEmu.exe to enable this.");
+    }
+
+    void OnStartupToggle(object? sender, RoutedEventArgs e)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)!;
+        if (StartupToggle.IsChecked == true) key.SetValue(RunValue, $"\"{Environment.ProcessPath}\" --tray");
+        else key.DeleteValue(RunValue, throwOnMissingValue: false);
     }
 
     void OnStartStop(object? sender, RoutedEventArgs e)
@@ -46,44 +75,51 @@ public partial class MainWindow : Window
         if (_emu.IsRunning) _emu.Stop(); else _emu.Start();
     }
 
-    void BuildChips()
-    {
-        var names = Enum.GetValues<DsButtons>().Where(b => b != DsButtons.None).Select(b => b.ToString()).Append("DpadRight");
-        foreach (var n in names)
-        {
-            var label = new TextBlock { Text = n, FontSize = 12, Foreground = TextOff };
-            var chip = new Border
-            {
-                Child = label, Background = ChipOff, CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(10, 5), Margin = new Thickness(0, 0, 6, 6),
-            };
-            _chips[n] = chip;
-            Chips.Children.Add(chip);
-        }
-    }
+    static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#FFC83D"));
+    static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#6C8CFF"));
+    const double BatteryInnerWidth = 24; // fill width at 100%
 
-    static void MoveDot(Ellipse dot, byte x, byte y)
+    void RefreshDevice(Snapshot? snap)
     {
-        // 0-255 raw, centre 128 -> dot inside the pad circle
-        Canvas.SetLeft(dot, x / 255.0 * (PadSize - DotSize));
-        Canvas.SetTop(dot, y / 255.0 * (PadSize - DotSize));
+        var t = _emu.Transport;
+        ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "Wired (USB)", _ => "Not connected" };
+        ConnDot.Fill = t == Transport.None ? Grey : Green;
+
+        if (snap is null || snap.Ds.BatteryPercent < 0)
+        {
+            BatteryText.Text = "Battery: --";
+            BatteryFill.Width = 0;
+            return;
+        }
+        var ds = snap.Ds;
+        BatteryFill.Width = BatteryInnerWidth * ds.BatteryPercent / 100.0;
+        BatteryFill.Background = ds.Charge == ChargeState.Charging ? Blue
+            : ds.BatteryPercent < 20 ? Red : ds.BatteryPercent < 40 ? Amber : Green;
+        BatteryText.Text = $"{ds.BatteryPercent}%  ·  " + ds.Charge switch
+        {
+            ChargeState.Charging => "Charging",
+            ChargeState.Full => "Fully charged",
+            _ => "On battery",
+        };
     }
 
     void RefreshLive()
     {
         var snap = _emu.Latest;
-        var ds = snap?.Ds ?? default;
-        // idle: sticks centred, nothing pressed
-        MoveDot(LeftDot, snap is null ? (byte)128 : ds.Lx, snap is null ? (byte)128 : ds.Ly);
-        MoveDot(RightDot, snap is null ? (byte)128 : ds.Rx, snap is null ? (byte)128 : ds.Ry);
-        L2.Value = snap is null ? 0 : ds.L2;
-        R2.Value = snap is null ? 0 : ds.R2;
-        foreach (var (name, chip) in _chips)
+        RefreshDevice(snap);
+        if (snap is null)
         {
-            bool on = snap is not null && (name == "DpadRight" ? ds.DpadRight : ds.Buttons.HasFlag(Enum.Parse<DsButtons>(name)));
-            chip.Background = on ? ChipOn : ChipOff;
-            ((TextBlock)chip.Child!).Foreground = on ? TextOn : TextOff;
+            // idle: sticks centred, nothing pressed
+            _dsPad.Update(_ => false, 0, 0, 128, 128, 128, 128);
+            _xboxPad.Update(_ => false, 0, 0, 128, 128, 128, 128);
+            return;
         }
+        var ds = snap.Ds;
+        var x = snap.X360;
+        _dsPad.Update(k => k == "DpadRight" ? ds.DpadRight : Enum.TryParse<DsButtons>(k, out var b) && ds.Buttons.HasFlag(b),
+            ds.L2, ds.R2, ds.Lx, ds.Ly, ds.Rx, ds.Ry);
+        _xboxPad.Update(k => Enum.TryParse<X360Buttons>(k, out var b) && x.Buttons.HasFlag(b),
+            x.LeftTrigger, x.RightTrigger, ds.Lx, ds.Ly, ds.Rx, ds.Ry);
     }
 
     async void OnHideToggle(object? sender, RoutedEventArgs e)

@@ -72,4 +72,36 @@ public class MappingTests
         Assert.Equal(77, x.LeftTrigger);
         Assert.Equal(X360Buttons.Back | X360Buttons.Start | X360Buttons.Guide, x.Buttons);
     }
+
+    [Theory]
+    [InlineData(0x08, 85, ChargeState.Discharging)]
+    [InlineData(0x0A, 100, ChargeState.Discharging)] // level 10 clamps to 100
+    [InlineData(0x00, 5, ChargeState.Discharging)]
+    [InlineData(0x13, 35, ChargeState.Charging)]
+    [InlineData(0x2A, 100, ChargeState.Full)]
+    [InlineData(0xA5, -1, ChargeState.Unknown)] // error nibble
+    public void Battery_status_byte(byte status, int pct, ChargeState charge)
+        => Assert.Equal((pct, charge), ReportParser.ParseBattery(status));
+
+    [Fact]
+    public void Battery_read_from_usb_and_bluetooth_reports()
+    {
+        var usb = Usb();
+        usb[1 + 52] = 0x13; // charging, 35%
+        var s = Parse(usb);
+        Assert.Equal(35, s.BatteryPercent);
+        Assert.Equal(ChargeState.Charging, s.Charge);
+
+        var bt = new byte[78];
+        bt[0] = ReportParser.BtReportId; bt[9] = 0x08;
+        bt[2 + 52] = 0x06; // discharging, 65%
+        Assert.Equal(65, Parse(bt).BatteryPercent);
+    }
+
+    [Fact]
+    public void Short_report_has_unknown_battery()
+    {
+        var r = new byte[12]; r[0] = ReportParser.UsbReportId; r[8] = 0x08;
+        Assert.Equal(-1, Parse(r).BatteryPercent);
+    }
 }

@@ -30,3 +30,14 @@ The console app (`src\DualSenseEmu.App`) still works and shares the same emulato
 
 The GUI talks to HidHide directly (one UAC prompt to hide or unhide) and can install HidHide for you. The PowerShell script remains as a CLI alternative.
 
+
+## Standalone exe, tray, start at login
+
+```powershell
+mise run dev:publish     # builds dist\DualSenseEmu.exe (self-contained, ~45 MB, no .NET needed)
+```
+
+- Closing the window hides it to the tray (tray menu: Show / Exit). It keeps emulating.
+- "Start with Windows" in the window registers the exe with `--tray` (only enabled for the published exe).
+- Header shows connection (Bluetooth / wired) and battery level with charge state.
+- Live view draws a DualSense and an Xbox 360 pad side by side; pressed buttons light up on both.
