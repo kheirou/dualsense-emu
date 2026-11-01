@@ -213,4 +213,14 @@ public class MappingTests
         Assert.Equal(X360Buttons.A, X360Mapper.DefaultFor(DsButtons.Cross));
         Assert.Null(X360Mapper.DefaultFor(DsButtons.Touchpad));
     }
+
+    [Fact]
+    public void Status_json_has_state_battery_and_nulls_when_idle()
+    {
+        var ds = new DualSenseState(128, 128, 128, 128, 0, 0, DsButtons.None, 75, ChargeState.Charging);
+        Assert.Equal("{\"state\":\"running\",\"transport\":\"usb\",\"battery\":75,\"charge\":\"charging\"}",
+            DualSenseEmu.Device.StatusFile.ToJson(DualSenseEmu.Device.EmuState.Running, DualSenseEmu.Device.Transport.Usb, ds));
+        Assert.Equal("{\"state\":\"waiting\",\"transport\":\"none\",\"battery\":null,\"charge\":null}",
+            DualSenseEmu.Device.StatusFile.ToJson(DualSenseEmu.Device.EmuState.Waiting, DualSenseEmu.Device.Transport.None, null));
+    }
 }

@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         _xboxPad = new PadMap(XboxCanvas, xbox: true);
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
+            _state = s.State;
             var colour = s.State switch { EmuState.Running => Green, EmuState.Error or EmuState.DriverMissing => Red, EmuState.Waiting => Amber, _ => Grey };
             StatusDot.Fill = colour;
             StatusWord.Foreground = colour;
@@ -196,8 +197,13 @@ public partial class MainWindow : Window
     static readonly IBrush AmberDim = new SolidColorBrush(Color.Parse("#E0A23F"));
     const double BatteryInnerWidth = 24; // fill width at 100%
 
+    EmuState _state = EmuState.Stopped;
+    string? _lastStatus;
+
     void RefreshDevice(Snapshot? snap)
     {
+        var json = StatusFile.ToJson(_state, _emu.Transport, snap?.Ds);
+        if (json != _lastStatus) { _lastStatus = json; StatusFile.Write(json); }
         var t = _emu.Transport;
         ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "USB cable", _ => "Not connected" };
         ConnDot.Fill = t == Transport.None ? Grey : Green;
