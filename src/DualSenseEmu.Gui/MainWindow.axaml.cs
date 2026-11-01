@@ -26,11 +26,17 @@ public partial class MainWindow : Window
         _xboxPad = new PadMap(XboxCanvas, xbox: true);
         _emu.StatusChanged += s => Dispatcher.UIThread.Post(() =>
         {
-            StatusText.Text = s.Message;
-            StatusDot.Fill = s.State switch { EmuState.Running => Green, EmuState.Error => Red, EmuState.Waiting => Amber, _ => Grey };
+            var colour = s.State switch { EmuState.Running => Green, EmuState.Error => Red, EmuState.Waiting => Amber, _ => Grey };
+            StatusDot.Fill = colour;
+            StatusWord.Foreground = colour;
+            StatusWord.Text = s.State switch { EmuState.Running => "EMULATING", EmuState.Waiting => "WAITING", EmuState.Error => "ERROR", _ => "OFF" };
+            StatusText.Text = s.State == EmuState.Running ? "games see an Xbox 360 pad" : s.Message;
             bool active = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error; // it keeps retrying until stopped
-            StartStop.Content = active ? "Stop" : "Start";
-            StartStop.Classes.Set("stop", active);
+            StartStop.Content = active ? "STOP EMULATION" : "START EMULATION";
+            SegEmulate.Classes.Set("on", active);
+            SegOff.Classes.Set("amber", !active);
+            KnobArc.Stroke = active ? Cyan : AmberDim;
+            KnobTick.Background = active ? Cyan : AmberDim;
         });
         _timer.Tick += (_, _) => RefreshLive();
         _timer.Start();
@@ -86,32 +92,36 @@ public partial class MainWindow : Window
         if (_emu.IsRunning) _emu.Stop(); else _emu.Start();
     }
 
+    void OnEmulate(object? sender, RoutedEventArgs e) { if (!_emu.IsRunning) _emu.Start(); }
+
+    void OnOff(object? sender, RoutedEventArgs e) { if (_emu.IsRunning) _emu.Stop(); }
+
     static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#FFC83D"));
     static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#6C8CFF"));
+    static readonly IBrush Cyan = new SolidColorBrush(Color.Parse("#3FE0FF"));
+    static readonly IBrush AmberDim = new SolidColorBrush(Color.Parse("#E0A23F"));
     const double BatteryInnerWidth = 24; // fill width at 100%
 
     void RefreshDevice(Snapshot? snap)
     {
         var t = _emu.Transport;
-        ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "Wired (USB)", _ => "Not connected" };
+        ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "USB cable", _ => "Not connected" };
         ConnDot.Fill = t == Transport.None ? Grey : Green;
+        TransTop.Text = TransBottom.Text = snap is null ? "IDLE" : "TRANSLATING...";
 
         if (snap is null || snap.Ds.BatteryPercent < 0)
         {
-            BatteryText.Text = "Battery: --";
+            BatteryText.Text = "--";
             BatteryFill.Width = 0;
+            ChargeText.Text = "";
             return;
         }
         var ds = snap.Ds;
         BatteryFill.Width = BatteryInnerWidth * ds.BatteryPercent / 100.0;
         BatteryFill.Background = ds.Charge == ChargeState.Charging ? Blue
             : ds.BatteryPercent < 20 ? Red : ds.BatteryPercent < 40 ? Amber : Green;
-        BatteryText.Text = $"{ds.BatteryPercent}%  ·  " + ds.Charge switch
-        {
-            ChargeState.Charging => "Charging",
-            ChargeState.Full => "Fully charged",
-            _ => "On battery",
-        };
+        BatteryText.Text = $"{ds.BatteryPercent}%";
+        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "⚡Charging", ChargeState.Full => "Full", _ => "" };
     }
 
     void RefreshLive()
