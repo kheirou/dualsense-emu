@@ -285,12 +285,12 @@ public partial class MainWindow : Window
 
     void OnStartStop(object? sender, RoutedEventArgs e)
     {
-        if (_emu.IsRunning) _emu.Stop(); else _emu.Start();
+        if (_emu.Emulating) _emu.Stop(); else _emu.Start();
     }
 
-    void OnEmulate(object? sender, RoutedEventArgs e) { if (!_emu.IsRunning) _emu.Start(); }
+    void OnEmulate(object? sender, RoutedEventArgs e) { _emu.Start(); }
 
-    void OnOff(object? sender, RoutedEventArgs e) { if (_emu.IsRunning) _emu.Stop(); }
+    void OnOff(object? sender, RoutedEventArgs e) { _emu.Stop(); }
 
     static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#FFC83D"));
     static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#6C8CFF"));
@@ -308,7 +308,7 @@ public partial class MainWindow : Window
         var t = _emu.Transport;
         ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "USB cable", _ => "Not connected" };
         ConnDot.Fill = t == Transport.None ? Grey : Green;
-        TransTop.Text = TransBottom.Text = snap is null ? "IDLE" : "TRANSLATING...";
+        TransTop.Text = TransBottom.Text = snap is null || !_emu.Emulating ? "IDLE" : "TRANSLATING...";
 
         if (snap is null || snap.Ds.BatteryPercent < 0)
         {

@@ -14,7 +14,7 @@ public sealed record EmuStatus(EmuState State, string Message);
 
 public sealed record Snapshot(DualSenseState Ds, X360State X360);
 
-/// <summary>Reads a DualSense over HID and mirrors it to a virtual Xbox 360 pad until stopped.</summary>
+/// <summary>Reads a DualSense over HID for as long as the app lives (battery, lightbar) and, while <see cref="Emulating"/>, mirrors it to a virtual Xbox 360 pad.</summary>
 public sealed class EmulatorService : IDisposable
 {
     const int SonyVid = 0x054C;
@@ -40,22 +40,23 @@ public sealed class EmulatorService : IDisposable
 
     public bool IsRunning => _task is { IsCompleted: false };
 
+    /// <summary>True while games see the virtual Xbox pad. When false the pad is still read, so battery stays visible.</summary>
+    public volatile bool Emulating;
+
     /// <summary>How the pad is connected right now (None while not emulating).</summary>
     public Transport Transport { get; private set; }
 
     public void Start()
     {
+        Emulating = true;
         if (IsRunning) return;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
         _task = Task.Run(() => Run(ct));
     }
 
-    public void Stop()
-    {
-        _cts?.Cancel();
-        _task?.Wait(); // full wait: a timed-out Stop would leave IsRunning true and make the next Start a silent no-op
-    }
+    /// <summary>Stop emulating; the pad keeps being read (battery, lightbar). Dispose ends the reader.</summary>
+    public void Stop() => Emulating = false;
 
     EmuStatus? _last;
 
@@ -69,7 +70,8 @@ public sealed class EmulatorService : IDisposable
 
     // Created on first connect and kept across pad drops, so a Bluetooth blip does not unplug the Xbox pad from the game.
     ViGEmClient? _client;
-    IXbox360Controller? _pad;
+    IXbox360Controller? _pad, _hooked;
+    byte _left, _right; // games' rumble, forwarded to the DualSense
 
     /// <summary>Keep trying until stopped: the pad may be off at login, or drop off Bluetooth mid-game.</summary>
     void Run(CancellationToken ct)
@@ -101,7 +103,7 @@ public sealed class EmulatorService : IDisposable
     {
         try { _pad?.Disconnect(); } catch { /* already gone */ }
         _client?.Dispose();
-        _pad = null; _client = null;
+        _pad = _hooked = null; _client = null;
     }
 
     IXbox360Controller EnsurePad()
@@ -121,9 +123,7 @@ public sealed class EmulatorService : IDisposable
         {
             var device = DeviceList.Local.GetHidDevices()
                 .FirstOrDefault(d => d.VendorID == SonyVid && DualSensePids.Contains(d.ProductID));
-            if (device is null) { Report(EmuState.Waiting, "Waiting for a DualSense (USB or Bluetooth)..."); return; }
-
-            var pad = EnsurePad(); // before touching the HID device, so a missing driver does not poke it every 2 s
+            if (device is null) { Report(Emulating ? EmuState.Waiting : EmuState.Stopped, "Waiting for a DualSense (USB or Bluetooth)..."); return; }
 
             stream = device.Open();
             stream.ReadTimeout = 500; // lets Stop() take effect even if the pad goes quiet
@@ -136,10 +136,8 @@ public sealed class EmulatorService : IDisposable
                 stream.GetFeature(feature);
             }
 
-            Report(EmuState.Running, $"Emulating: games see an Xbox 360 pad ({(bluetooth ? "Bluetooth" : "USB")})");
-
             // games' rumble (large = low-frequency motor) goes straight to the DualSense; sent only when it changes
-            byte left = 0, right = 0, seq = 0;
+            byte seq = 0;
             ((byte, byte, byte)?, byte?) lastLook = default;
             var sendLock = new object();
             void Send()
@@ -148,11 +146,10 @@ public sealed class EmulatorService : IDisposable
                 {
                     var p = Profile;
                     lastLook = (OutputReport.Resolve(p, Latest?.Ds), OutputReport.ResolveLeds(p, Latest?.Ds));
-                    try { stream.Write(OutputReport.Build(bluetooth, left, right, lastLook.Item1, (byte)(seq++ & 0x0F), lastLook.Item2)); }
+                    try { stream.Write(OutputReport.Build(bluetooth, _left, _right, lastLook.Item1, (byte)(seq++ & 0x0F), lastLook.Item2)); }
                     catch (Exception) { /* pad vanished; the read loop notices and reconnects */ }
                 }
             }
-            pad.FeedbackReceived += (_, e) => { left = e.LargeMotor; right = e.SmallMotor; Send(); };
             _send = Send;
             Send(); // applies the lightbar colour right away
 
@@ -165,9 +162,10 @@ public sealed class EmulatorService : IDisposable
                 if (!ReportParser.TryParse(buf.AsSpan(0, n), out var ds)) continue;
                 var x = X360Mapper.Map(ds, Profile);
                 Latest = new Snapshot(ds, x);
+                var pad = SyncPad(bluetooth, Send);
                 var p = Profile; // battery or charge changed the lightbar colour, or the user changed mode / player
                 if ((OutputReport.Resolve(p, ds), OutputReport.ResolveLeds(p, ds)) != lastLook) Send();
-                Submit(pad, x);
+                if (pad is not null) Submit(pad, x);
             }
         }
         finally
@@ -179,6 +177,31 @@ public sealed class EmulatorService : IDisposable
             Latest = null;
             Transport = Transport.None;
         }
+    }
+
+    /// <summary>Create the virtual pad when emulation is switched on, release it (and any held input) when switched off.</summary>
+    IXbox360Controller? SyncPad(bool bluetooth, Action send)
+    {
+        if (Emulating)
+        {
+            var pad = EnsurePad(); // throws VigemBusNotFoundException when the driver is missing
+            if (!ReferenceEquals(pad, _hooked))
+            {
+                pad.FeedbackReceived += (_, e) => { _left = e.LargeMotor; _right = e.SmallMotor; _send?.Invoke(); };
+                _hooked = pad;
+            }
+            Report(EmuState.Running, $"Emulating: games see an Xbox 360 pad ({(bluetooth ? "Bluetooth" : "USB")})");
+            return pad;
+        }
+        if (_pad is not null)
+        {
+            try { Submit(_pad, X360Mapper.Map(new DualSenseState(128, 128, 128, 128, 0, 0, DsButtons.None))); } catch { /* pad already gone */ }
+            ReleasePad();
+            _left = _right = 0;
+            send();
+        }
+        Report(EmuState.Stopped, "Stopped - battery still shown");
+        return null;
     }
 
     static void Submit(IXbox360Controller pad, X360State x)
@@ -193,5 +216,9 @@ public sealed class EmulatorService : IDisposable
         pad.SubmitReport();
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _task?.Wait(); // full wait: a timed-out Dispose would leave IsRunning true
+    }
 }
