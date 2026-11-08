@@ -136,10 +136,11 @@
                   <Button x:Name="SegOff" Classes="mode" Content="Passthrough (off)" Click="OnOff" />
                 </StackPanel>
                 <Border Width="128" Height="128" CornerRadius="64" HorizontalAlignment="Left" VerticalAlignment="Center"
-                        Background="#0B0D14" BorderBrush="#14EEF0F5" BorderThickness="1">
+                        Background="#0B0D14" BorderBrush="#14EEF0F5" BorderThickness="1"
+                        Cursor="Hand" PointerPressed="OnKnob" ToolTip.Tip="Click to turn emulation on or off">
                   <Panel>
                     <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#4FB7D6" StrokeThickness="6" StrokeLineCap="Round" />
-                    <Border Width="64" Height="64" CornerRadius="32" BorderBrush="#14EEF0F5" BorderThickness="1" Background="#1A1E28">
+                    <Border x:Name="KnobDial" Width="64" Height="64" CornerRadius="32" BorderBrush="#14EEF0F5" BorderThickness="1" Background="#1A1E28">
                       <Border x:Name="KnobTick" Width="4" Height="12" CornerRadius="2" Background="#4FB7D6" VerticalAlignment="Top" Margin="0,8,0,0" />
                     </Border>
                   </Panel>
