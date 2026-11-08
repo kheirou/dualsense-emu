@@ -12,9 +12,9 @@ namespace DualSenseEmu.Gui;
 
 public partial class MainWindow : Window
 {
-    static readonly IBrush Green = new SolidColorBrush(Color.Parse("#3DDC84"));
-    static readonly IBrush Red = new SolidColorBrush(Color.Parse("#FF5C5C"));
-    static readonly IBrush Grey = new SolidColorBrush(Color.Parse("#8A93A6"));
+    static readonly IBrush Green = new SolidColorBrush(Color.Parse("#4CC38A"));
+    static readonly IBrush Red = new SolidColorBrush(Color.Parse("#E5484D"));
+    static readonly IBrush Grey = new SolidColorBrush(Color.Parse("#7A8296"));
     readonly PadMap _dsPad, _xboxPad;
     readonly EmulatorService _emu = new();
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
@@ -32,13 +32,13 @@ public partial class MainWindow : Window
             StatusWord.Foreground = colour;
             StatusWord.Text = s.State switch
             {
-                EmuState.Running => "EMULATING", EmuState.Waiting => "WAITING", EmuState.Error => "ERROR",
-                EmuState.DriverMissing => "NO DRIVER", _ => "OFF",
+                EmuState.Running => "Emulating", EmuState.Waiting => "Waiting", EmuState.Error => "Error",
+                EmuState.DriverMissing => "No driver", _ => "Off",
             };
             StatusText.Text = s.State == EmuState.Running ? "games see an Xbox 360 pad" : s.Message;
             InstallVigem.IsVisible = s.State == EmuState.DriverMissing;
             bool active = s.State is EmuState.Running or EmuState.Waiting or EmuState.Error or EmuState.DriverMissing; // it keeps retrying until stopped
-            StartStop.Content = active ? "STOP EMULATION" : "START EMULATION";
+            StartStop.Content = active ? "Stop emulation" : "Start emulation";
             SegEmulate.Classes.Set("on", active);
             SegOff.Classes.Set("amber", !active);
             KnobArc.Stroke = active ? Cyan : AmberDim;
@@ -138,8 +138,8 @@ public partial class MainWindow : Window
 
 
     static readonly string[] XboxTargets = Enum.GetNames<X360Buttons>().Where(n => n != "None").ToArray();
-    static readonly IBrush TileOn = new SolidColorBrush(Color.Parse("#3FE0FF"));
-    static readonly IBrush TileOff = new SolidColorBrush(Color.Parse("#33456A"));
+    static readonly IBrush TileOn = new SolidColorBrush(Color.Parse("#4FB7D6"));
+    static readonly IBrush TileOff = new SolidColorBrush(Color.Parse("#262B38"));
     DsButtons _remapSel = DsButtons.Cross;
 
     X360Buttons? RemapOf(DsButtons b)
@@ -157,7 +157,7 @@ public partial class MainWindow : Window
             text.Children.Add(new TextBlock { Text = b.ToString(), FontWeight = FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center });
             text.Children.Add(new TextBlock { Text = "→ " + target, FontSize = 12, Foreground = over is null ? Grey : Amber, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center });
             var tile = new Button { Tag = b, Width = 104, Height = 48, Margin = new Thickness(0, 0, 8, 8), Content = text,
-                BorderThickness = new Thickness(1.5), BorderBrush = b == _remapSel ? TileOn : TileOff };
+                BorderThickness = new Thickness(1), BorderBrush = b == _remapSel ? TileOn : TileOff };
             tile.Click += (_, _) => { _remapSel = b; BuildRemap(_emu.Profile); };
             RemapPanel.Children.Add(tile);
         }
@@ -172,7 +172,7 @@ public partial class MainWindow : Window
 
     void AddTarget(string label, X360Buttons? target, bool selected)
     {
-        var r = new RadioButton { Content = label, GroupName = "rt", IsChecked = selected, Margin = new Thickness(0, 0, 14, 4) };
+        var r = new RadioButton { Content = label, GroupName = "rt", IsChecked = selected, Margin = new Thickness(0, 0, 16, 4) };
         r.Click += (_, _) =>
         {
             var map = new Dictionary<DsButtons, X360Buttons>(_emu.Profile.Remap ?? []);
@@ -244,7 +244,7 @@ public partial class MainWindow : Window
         foreach (var (name, hex) in Presets)
         {
             var b = new Button { Width = 40, Height = 40, CornerRadius = new CornerRadius(20), Margin = new Thickness(0, 0, 8, 8),
-                Background = new SolidColorBrush(Color.Parse(hex)), BorderBrush = TileOff, BorderThickness = new Thickness(1.5) };
+                Background = new SolidColorBrush(Color.Parse(hex)), BorderBrush = TileOff, BorderThickness = new Thickness(1) };
             ToolTip.SetTip(b, name);
             b.Click += (_, _) => SetLightbar(hex, fromPicker: false);
             PresetPanel.Children.Add(b);
@@ -292,9 +292,9 @@ public partial class MainWindow : Window
 
     void OnOff(object? sender, RoutedEventArgs e) { _emu.Stop(); }
 
-    static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#FFC83D"));
-    static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#6C8CFF"));
-    static readonly IBrush Cyan = new SolidColorBrush(Color.Parse("#3FE0FF"));
+    static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#E0A23F"));
+    static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#4FB7D6"));
+    static readonly IBrush Cyan = new SolidColorBrush(Color.Parse("#4FB7D6"));
     static readonly IBrush AmberDim = new SolidColorBrush(Color.Parse("#E0A23F"));
     const double BatteryInnerWidth = 24; // fill width at 100%
 
@@ -308,7 +308,7 @@ public partial class MainWindow : Window
         var t = _emu.Transport;
         ConnText.Text = t switch { Transport.Bluetooth => "Bluetooth", Transport.Usb => "USB cable", _ => "Not connected" };
         ConnDot.Fill = t == Transport.None ? Grey : Green;
-        TransTop.Text = TransBottom.Text = snap is null || !_emu.Emulating ? "IDLE" : "TRANSLATING...";
+        TransTop.Text = TransBottom.Text = snap is null || !_emu.Emulating ? "Idle" : "Translating";
 
         if (snap is null || snap.Ds.BatteryPercent < 0)
         {
@@ -322,7 +322,7 @@ public partial class MainWindow : Window
         BatteryFill.Background = ds.Charge == ChargeState.Charging ? Blue
             : ds.BatteryPercent < 20 ? Red : ds.BatteryPercent < 40 ? Amber : Green;
         BatteryText.Text = $"{ds.BatteryPercent}%";
-        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "⚡Charging", ChargeState.Full => "Full", _ => "" };
+        ChargeText.Text = ds.Charge switch { ChargeState.Charging => "Charging", ChargeState.Full => "Full", _ => "" };
     }
 
     void RefreshLive()
