@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
@@ -98,7 +99,7 @@ public sealed class PadMap
     /// <summary>An outlined shoulder cap plus an accent copy whose opacity follows the trigger pull.</summary>
     Shape Trigger(string geometry, double labelX, double labelY, string label)
     {
-        Add(new Shape { Data = Geometry.Parse(geometry), Fill = Off, Stroke = B(Edge), StrokeThickness = 1 });
+        Add(new Shape { Data = Geometry.Parse(geometry), Fill = Off, Stroke = B(Ring), StrokeThickness = 1 });
         var fill = new Shape { Data = Geometry.Parse(geometry), Fill = B(Accent), Opacity = 0 };
         Add(fill);
         Add(new TextBlock { Text = label, FontSize = 6, FontWeight = FontWeight.Medium, Foreground = LabelOff, IsHitTestVisible = false }, labelX, labelY);
@@ -114,7 +115,7 @@ public sealed class PadMap
         var box = new Border
         {
             Width = w, Height = h, CornerRadius = new CornerRadius(r),
-            Background = Off, BorderBrush = B(colour ?? Edge), BorderThickness = new Thickness(edgeWidth),
+            Background = Off, BorderBrush = B(colour is null ? Edge : "#99" + colour.TrimStart('#')), BorderThickness = new Thickness(edgeWidth),
         };
         if (label is not null)
         {
@@ -125,6 +126,7 @@ public sealed class PadMap
             };
             box.Child = tb;
         }
+        ToolTip.SetTip(box, Regex.Replace(key, "(?<=[a-z])(?=[A-Z])", " ")); // "LeftThumb" -> "Left Thumb"
         Add(box, x, y);
         _parts[key] = (box, tb, labelOff, B(colour ?? Accent));
     }
