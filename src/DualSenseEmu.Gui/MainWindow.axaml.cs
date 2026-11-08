@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
             SegOff.Classes.Set("amber", !active);
             KnobArc.Stroke = active ? Cyan : AmberDim;
             KnobTick.Background = active ? Cyan : AmberDim;
+            KnobDial.RenderTransform = new RotateTransform(active ? 135 : -135); // tick points at the end of the arc it is on
         });
         _timer.Tick += (_, _) => RefreshLive();
         Closing += (_, e) =>
@@ -286,6 +288,13 @@ public partial class MainWindow : Window
     void OnStartStop(object? sender, RoutedEventArgs e)
     {
         if (_emu.Emulating) _emu.Stop(); else _emu.Start();
+    }
+
+    void OnKnob(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
+        e.Handled = true; // not a window drag
+        if (_state is EmuState.Stopped) _emu.Start(); else _emu.Stop();
     }
 
     void OnEmulate(object? sender, RoutedEventArgs e) { _emu.Start(); }
