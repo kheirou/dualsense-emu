@@ -4,129 +4,117 @@
         Title="DualSense Emulator" Icon="/Assets/icon.png" Width="1040" SizeToContent="Height" CanResize="False"
         RequestedThemeVariant="Dark" ExtendClientAreaToDecorationsHint="True">
   <Window.Background>
-    <RadialGradientBrush Center="30%,20%" GradientOrigin="30%,20%" RadiusX="100%" RadiusY="100%">
-      <GradientStop Color="#13233A" Offset="0" />
-      <GradientStop Color="#070B14" Offset="1" />
-    </RadialGradientBrush>
+    <SolidColorBrush Color="#0B0D14" />
   </Window.Background>
 
   <Window.Styles>
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="#A6121A2A" />
-      <Setter Property="BorderBrush" Value="#2A3A56" />
+      <Setter Property="Background" Value="#11141C" />
+      <Setter Property="BorderBrush" Value="#14EEF0F5" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="18" />
-      <Setter Property="Padding" Value="22" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="20" />
     </Style>
     <Style Selector="TextBlock.dim">
-      <Setter Property="Foreground" Value="#8A97B0" />
+      <Setter Property="Foreground" Value="#7A8296" />
       <Setter Property="FontSize" Value="14" />
     </Style>
     <Style Selector="TextBlock.label">
-      <Setter Property="Foreground" Value="#E6ECF7" />
-      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="#EEF0F5" />
+      <Setter Property="FontSize" Value="14" />
     </Style>
     <Style Selector="Border.pill">
-      <Setter Property="Background" Value="#B30D1424" />
-      <Setter Property="BorderBrush" Value="#2A3A56" />
+      <Setter Property="Background" Value="#11141C" />
+      <Setter Property="BorderBrush" Value="#14EEF0F5" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="999" />
-      <Setter Property="Padding" Value="16,9" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,8" />
     </Style>
-    <!-- the "TRANSLATING..." badges between the two pads -->
+    <!-- the "Translating" badges between the two pads -->
     <Style Selector="Border.badge">
-      <Setter Property="Background" Value="#CC0B2230" />
-      <Setter Property="BorderBrush" Value="#3FE0FF" />
-      <Setter Property="BorderThickness" Value="1.5" />
-      <Setter Property="CornerRadius" Value="999" />
-      <Setter Property="Padding" Value="14,4" />
-      <Setter Property="BoxShadow" Value="0 0 10 1 #663FE0FF" />
+      <Setter Property="Background" Value="#1A1E28" />
+      <Setter Property="BorderBrush" Value="#14EEF0F5" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="8,4" />
       <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
 
-    <!-- mode pills: Emulate (cyan glow) / Passthrough (amber) -->
+    <!-- mode buttons: Emulate (accent hairline) / Passthrough (amber hairline) -->
     <Style Selector="Button.mode">
-      <Setter Property="Background" Value="#B30D1424" />
-      <Setter Property="BorderBrush" Value="#2A3A56" />
-      <Setter Property="BorderThickness" Value="1.5" />
-      <Setter Property="Foreground" Value="#7E8AA2" />
-      <Setter Property="FontSize" Value="17" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="CornerRadius" Value="999" />
-      <Setter Property="Height" Value="62" />
-      <Setter Property="Padding" Value="78,0,20,0" />
+      <Setter Property="Background" Value="#1A1E28" />
+      <Setter Property="BorderBrush" Value="#14EEF0F5" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="#A3A9B8" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="Padding" Value="16,0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.mode:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#1A2740" />
+      <Setter Property="Background" Value="#232836" />
     </Style>
     <Style Selector="Button.mode.on /template/ ContentPresenter">
-      <Setter Property="Background" Value="#1A4A66" />
-      <Setter Property="BorderBrush" Value="#3FE0FF" />
-      <Setter Property="BoxShadow" Value="0 0 16 2 #883FE0FF" />
-      <Setter Property="TextBlock.Foreground" Value="#E8FBFF" />
+      <Setter Property="Background" Value="#232836" />
+      <Setter Property="BorderBrush" Value="#4FB7D6" />
+      <Setter Property="TextBlock.Foreground" Value="#EEF0F5" />
     </Style>
     <Style Selector="Button.mode.amber /template/ ContentPresenter">
-      <Setter Property="Background" Value="#3A2E14" />
+      <Setter Property="Background" Value="#232836" />
       <Setter Property="BorderBrush" Value="#E0A23F" />
-      <Setter Property="BoxShadow" Value="0 0 14 1 #66E0A23F" />
-      <Setter Property="TextBlock.Foreground" Value="#F2D9A6" />
+      <Setter Property="TextBlock.Foreground" Value="#EEF0F5" />
     </Style>
 
-    <!-- outlined glowing STOP / START EMULATION -->
+    <!-- primary action: off white on dark -->
     <Style Selector="Button#StartStop">
-      <Setter Property="Background" Value="#10283A" />
-      <Setter Property="BorderBrush" Value="#3FE0FF" />
-      <Setter Property="BorderThickness" Value="1.5" />
-      <Setter Property="Foreground" Value="#E8FBFF" />
-      <Setter Property="FontSize" Value="18" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Background" Value="#EEF0F5" />
+      <Setter Property="Foreground" Value="#0B0D14" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="28,11" />
+      <Setter Property="Padding" Value="24,12" />
       <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
-    <Style Selector="Button#StartStop /template/ ContentPresenter">
-      <Setter Property="BoxShadow" Value="0 0 14 1 #663FE0FF" />
-    </Style>
     <Style Selector="Button#StartStop:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#16384F" />
-      <Setter Property="TextBlock.Foreground" Value="White" />
+      <Setter Property="Background" Value="#D9DCE5" />
+      <Setter Property="TextBlock.Foreground" Value="#0B0D14" />
     </Style>
   </Window.Styles>
 
   <!-- content runs under the title bar; any empty spot drags the window -->
   <Panel Background="Transparent" PointerPressed="OnDragWindow">
-    <StackPanel Margin="24,38,24,24" Spacing="18">
+    <StackPanel Margin="24,40,24,24" Spacing="16">
 
       <!-- header -->
       <Grid ColumnDefinitions="Auto,*,Auto">
-        <Border Width="52" Height="52" CornerRadius="26" Background="#14203A" BorderBrush="#6C8CFF" BorderThickness="1.5"
-                BoxShadow="0 0 16 2 #666C8CFF" Margin="0,0,14,0">
+        <Border Width="48" Height="48" CornerRadius="12" Background="#1A1E28" BorderBrush="#14EEF0F5" BorderThickness="1" Margin="0,0,16,0">
           <Image Source="/Assets/icon.png" Width="32" Height="32" />
         </Border>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-          <TextBlock Text="DualSense Emulator" FontSize="26" FontWeight="Bold" Foreground="#F2F6FF" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+          <TextBlock Text="DualSense Emulator" FontSize="24" FontWeight="Medium" Foreground="#EEF0F5" />
           <TextBlock Text="Your DualSense as a virtual Xbox 360 pad" Classes="dim" />
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
           <Border Classes="pill">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Ellipse x:Name="ConnDot" Width="9" Height="9" Fill="#8A93A6" VerticalAlignment="Center" />
+              <Ellipse x:Name="ConnDot" Width="8" Height="8" Fill="#7A8296" VerticalAlignment="Center" />
               <TextBlock x:Name="ConnText" Text="Not connected" Classes="label" VerticalAlignment="Center" />
             </StackPanel>
           </Border>
           <Border Classes="pill">
-            <StackPanel Orientation="Horizontal" Spacing="9">
+            <StackPanel Orientation="Horizontal" Spacing="8">
               <Grid Width="32" Height="14" VerticalAlignment="Center">
-                <Border Width="28" Height="14" HorizontalAlignment="Left" CornerRadius="3" BorderBrush="#8A97B0" BorderThickness="1" Padding="1">
-                  <Border x:Name="BatteryFill" Width="0" HorizontalAlignment="Left" CornerRadius="2" Background="#3DDC84" />
+                <Border Width="28" Height="14" HorizontalAlignment="Left" CornerRadius="3" BorderBrush="#7A8296" BorderThickness="1" Padding="1">
+                  <Border x:Name="BatteryFill" Width="0" HorizontalAlignment="Left" CornerRadius="2" Background="#4CC38A" />
                 </Border>
-                <Border Width="3" Height="6" HorizontalAlignment="Right" CornerRadius="1" Background="#8A97B0" />
+                <Border Width="3" Height="6" HorizontalAlignment="Right" CornerRadius="1" Background="#7A8296" />
               </Grid>
               <TextBlock x:Name="BatteryText" Text="--" Classes="label" VerticalAlignment="Center" />
-              <TextBlock x:Name="ChargeText" Text="" FontSize="16" Foreground="#FFB13D" VerticalAlignment="Center" />
+              <TextBlock x:Name="ChargeText" Text="" FontSize="14" Foreground="#A3A9B8" VerticalAlignment="Center" />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -134,50 +122,42 @@
 
       <TabControl>
         <TabItem Header="Dashboard">
-        <Grid ColumnDefinitions="470,*" ColumnSpacing="22">
+        <Grid ColumnDefinitions="480,*" ColumnSpacing="24">
 
           <!-- left: controller management -->
           <Border Classes="card">
-            <StackPanel Spacing="18">
-              <TextBlock FontSize="24" FontWeight="Bold">
-                <Run Text="CONTROLLER " Foreground="#3FE0FF" /><Run Text="MANAGEMENT" Foreground="#F2F6FF" />
-              </TextBlock>
+            <StackPanel Spacing="16">
+              <TextBlock Text="Controller management" FontSize="20" FontWeight="Medium" Foreground="#EEF0F5" />
 
-              <!-- knob + stacked mode pills -->
-              <Panel>
-                <StackPanel Margin="58,0,0,0" Spacing="12">
-                  <Button x:Name="SegEmulate" Classes="mode" Content="EMULATE XBOX GAMEPAD" Click="OnEmulate" />
-                  <Button x:Name="SegOff" Classes="mode" Content="PASSTHROUGH (OFF)" Click="OnOff" />
+              <!-- knob + stacked mode buttons -->
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="16">
+                  <Button x:Name="SegEmulate" Classes="mode" Content="Emulate Xbox gamepad" Click="OnEmulate" />
+                  <Button x:Name="SegOff" Classes="mode" Content="Passthrough (off)" Click="OnOff" />
                 </StackPanel>
                 <Border Width="128" Height="128" CornerRadius="64" HorizontalAlignment="Left" VerticalAlignment="Center"
-                        Background="#0B1222" BorderBrush="#2A3A56" BorderThickness="1.5" BoxShadow="0 0 22 2 #553FE0FF">
+                        Background="#0B0D14" BorderBrush="#14EEF0F5" BorderThickness="1">
                   <Panel>
-                    <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#3FE0FF" StrokeThickness="7" StrokeLineCap="Round" />
-                    <Border Width="66" Height="66" CornerRadius="33" BorderBrush="#33456A" BorderThickness="1">
-                      <Border.Background>
-                        <RadialGradientBrush Center="40%,35%" GradientOrigin="40%,35%">
-                          <GradientStop Color="#2A3550" Offset="0" />
-                          <GradientStop Color="#0E1422" Offset="1" />
-                        </RadialGradientBrush>
-                      </Border.Background>
-                      <Border x:Name="KnobTick" Width="3" Height="12" CornerRadius="2" Background="#3FE0FF" VerticalAlignment="Top" Margin="0,8,0,0" />
+                    <Path x:Name="KnobArc" Data="M 28,96 A 44,44 0 1 1 100,96" Stroke="#4FB7D6" StrokeThickness="6" StrokeLineCap="Round" />
+                    <Border Width="64" Height="64" CornerRadius="32" BorderBrush="#14EEF0F5" BorderThickness="1" Background="#1A1E28">
+                      <Border x:Name="KnobTick" Width="4" Height="12" CornerRadius="2" Background="#4FB7D6" VerticalAlignment="Top" Margin="0,8,0,0" />
                     </Border>
                   </Panel>
                 </Border>
-              </Panel>
+              </Grid>
 
               <!-- current status -->
-              <Border x:Name="StatusPanel" CornerRadius="14" BorderThickness="1.5" BorderBrush="#2C6B5A" Background="#B30E2524" Padding="18">
+              <Border x:Name="StatusPanel" CornerRadius="10" BorderThickness="1" BorderBrush="#14EEF0F5" Background="#1A1E28" Padding="16">
                 <StackPanel Spacing="8">
-                  <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                    <Ellipse x:Name="StatusDot" Width="14" Height="14" Fill="#8A93A6" VerticalAlignment="Center" />
-                    <TextBlock FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center">
-                      <Run Text="CURRENT STATUS: " Foreground="#F2F6FF" /><Run x:Name="StatusWord" Text="STOPPED" Foreground="#8A93A6" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="#7A8296" VerticalAlignment="Center" />
+                    <TextBlock FontSize="18" FontWeight="Medium" VerticalAlignment="Center">
+                      <Run Text="Status  " Foreground="#A3A9B8" /><Run x:Name="StatusWord" Text="Off" Foreground="#7A8296" />
                     </TextBlock>
                   </StackPanel>
                   <TextBlock x:Name="StatusText" Text="" Classes="dim" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
                   <Button x:Name="InstallVigem" Content="Install ViGEmBus driver" IsVisible="False" HorizontalAlignment="Center" Click="OnInstallVigem" />
-                  <Button x:Name="StartStop" Content="START EMULATION" Click="OnStartStop" Margin="0,6,0,0" />
+                  <Button x:Name="StartStop" Content="Start emulation" Click="OnStartStop" Margin="0,8,0,0" />
                 </StackPanel>
               </Border>
 
@@ -185,7 +165,7 @@
               <StackPanel Spacing="12" >
                 <StackPanel Orientation="Horizontal" Spacing="12">
                   <ToggleSwitch x:Name="HideToggle" OnContent="" OffContent="" Click="OnHideToggle" MinWidth="0" />
-                  <StackPanel VerticalAlignment="Center" Spacing="1">
+                  <StackPanel VerticalAlignment="Center" Spacing="4">
                     <TextBlock Text="Hide real pad" Classes="label" />
                     <TextBlock x:Name="HideText" Classes="dim" FontSize="12" TextWrapping="Wrap" MaxWidth="320" />
                   </StackPanel>
@@ -202,23 +182,23 @@
           <!-- right: live input -->
           <Border Grid.Column="1" Classes="card">
             <StackPanel Spacing="4">
-              <TextBlock FontSize="19" VerticalAlignment="Center">
-                <Run Text="LIVE INPUT" FontWeight="Bold" Foreground="#C9D3E6" /><Run Text="  ·  Active map translation" Foreground="#8A97B0" FontSize="15" />
+              <TextBlock FontSize="16" VerticalAlignment="Center">
+                <Run Text="Live input" FontWeight="Medium" Foreground="#EEF0F5" /><Run Text="   Active map translation" Foreground="#7A8296" FontSize="13" />
               </TextBlock>
-              <Viewbox Height="230" Stretch="Uniform" Margin="0,6,0,0"><Canvas x:Name="DsCanvas" /></Viewbox>
-              <TextBlock Text="PS5 DualSense" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" />
-              <Border Classes="badge"><TextBlock x:Name="TransTop" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
-              <Border Width="2" Height="14" Background="#3FE0FF" HorizontalAlignment="Center" BoxShadow="0 0 6 1 #883FE0FF" />
+              <Viewbox Height="230" Stretch="Uniform" Margin="0,8,0,0"><Canvas x:Name="DsCanvas" /></Viewbox>
+              <TextBlock Text="PS5 DualSense" FontSize="14" FontWeight="Medium" Foreground="#A3A9B8" HorizontalAlignment="Center" />
+              <Border Classes="badge"><TextBlock x:Name="TransTop" Text="Idle" Foreground="#A3A9B8" FontSize="12" FontFamily="Cascadia Mono,Consolas,monospace" /></Border>
+              <Border Width="1" Height="16" Background="#7A8296" HorizontalAlignment="Center" />
               <Viewbox Height="230" Stretch="Uniform"><Canvas x:Name="XboxCanvas" /></Viewbox>
-              <Border Classes="badge"><TextBlock x:Name="TransBottom" Text="IDLE" Foreground="#9BEFFF" FontSize="13" FontWeight="SemiBold" LetterSpacing="0.5" /></Border>
-              <TextBlock Text="Xbox 360 Pad" FontSize="18" FontWeight="SemiBold" Foreground="#F2F6FF" HorizontalAlignment="Center" Margin="0,4,0,0" />
+              <Border Classes="badge"><TextBlock x:Name="TransBottom" Text="Idle" Foreground="#A3A9B8" FontSize="12" FontFamily="Cascadia Mono,Consolas,monospace" /></Border>
+              <TextBlock Text="Xbox 360 pad" FontSize="14" FontWeight="Medium" Foreground="#A3A9B8" HorizontalAlignment="Center" Margin="0,4,0,0" />
             </StackPanel>
           </Border>
 
         </Grid>
         </TabItem>
         <TabItem Header="Sticks">
-          <Border Classes="card" Margin="0,14,0,0">
+          <Border Classes="card" Margin="0,16,0,0">
               <StackPanel Spacing="6" >
                 <TextBlock Text="Stick deadzone" Classes="dim" />
                 <Slider x:Name="DeadzoneSlider" Minimum="0" Maximum="0.4" ValueChanged="OnSlide" />
@@ -233,7 +213,7 @@
           </Border>
         </TabItem>
         <TabItem Header="Buttons">
-          <Border Classes="card" Margin="0,14,0,0">
+          <Border Classes="card" Margin="0,16,0,0">
               <StackPanel Spacing="12">
                 <TextBlock Text="1. Pick a DualSense button   (amber = remapped)" Classes="dim" />
                 <WrapPanel x:Name="RemapPanel" Orientation="Horizontal" />
@@ -243,22 +223,22 @@
           </Border>
         </TabItem>
         <TabItem Header="Lightbar">
-          <Border Classes="card" Margin="0,14,0,0">
+          <Border Classes="card" Margin="0,16,0,0">
             <StackPanel Spacing="10">
               <TextBlock Text="Lightbar shows" Classes="label" />
               <WrapPanel x:Name="LightModePanel" Orientation="Horizontal">
-                <RadioButton GroupName="lm" Tag="0" Content="Static colour" Click="OnLightMode" Margin="0,0,14,0" />
-                <RadioButton GroupName="lm" Tag="1" Content="Battery level (green / amber / red)" Click="OnLightMode" Margin="0,0,14,0" />
-                <RadioButton GroupName="lm" Tag="2" Content="Charging status" Click="OnLightMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="lm" Tag="0" Content="Static colour" Click="OnLightMode" Margin="0,0,16,0" />
+                <RadioButton GroupName="lm" Tag="1" Content="Battery level (green / amber / red)" Click="OnLightMode" Margin="0,0,16,0" />
+                <RadioButton GroupName="lm" Tag="2" Content="Charging status" Click="OnLightMode" Margin="0,0,16,0" />
               </WrapPanel>
               <StackPanel x:Name="StaticPanel" Spacing="8">
                 <TextBlock Text="Presets" Classes="dim" />
                 <WrapPanel x:Name="PresetPanel" Orientation="Horizontal" />
                 <TextBlock Text="Make your own" Classes="dim" />
-                <Border x:Name="LightSwatch" Height="30" CornerRadius="8" BorderBrush="#33456A" BorderThickness="1" Background="Transparent" />
-                <Slider x:Name="RedSlider" Minimum="0" Maximum="255" Foreground="#FF5C5C" ValueChanged="OnRgb" />
-                <Slider x:Name="GreenSlider" Minimum="0" Maximum="255" Foreground="#3DDC84" ValueChanged="OnRgb" />
-                <Slider x:Name="BlueSlider" Minimum="0" Maximum="255" Foreground="#6C8CFF" ValueChanged="OnRgb" />
+                <Border x:Name="LightSwatch" Height="30" CornerRadius="8" BorderBrush="#262B38" BorderThickness="1" Background="Transparent" />
+                <Slider x:Name="RedSlider" Minimum="0" Maximum="255" Foreground="#E5484D" ValueChanged="OnRgb" />
+                <Slider x:Name="GreenSlider" Minimum="0" Maximum="255" Foreground="#4CC38A" ValueChanged="OnRgb" />
+                <Slider x:Name="BlueSlider" Minimum="0" Maximum="255" Foreground="#4FB7D6" ValueChanged="OnRgb" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <TextBox x:Name="LightbarBox" Width="120" Watermark="#RRGGBB" TextChanged="OnLightbar" />
                   <Button Content="Use pad's own colour" Click="OnLightbarClear" />
@@ -266,16 +246,16 @@
               </StackPanel>
               <TextBlock Text="Player LEDs show" Classes="label" Margin="0,8,0,0" />
               <WrapPanel x:Name="PlayerModePanel" Orientation="Horizontal">
-                <RadioButton GroupName="pm" Tag="0" Content="Leave as is" Click="OnPlayerMode" Margin="0,0,14,0" />
-                <RadioButton GroupName="pm" Tag="1" Content="Player number" Click="OnPlayerMode" Margin="0,0,14,0" />
-                <RadioButton GroupName="pm" Tag="2" Content="Battery level (1-5 LEDs)" Click="OnPlayerMode" Margin="0,0,14,0" />
-                <RadioButton GroupName="pm" Tag="3" Content="Charging (all lit)" Click="OnPlayerMode" Margin="0,0,14,0" />
+                <RadioButton GroupName="pm" Tag="0" Content="Leave as is" Click="OnPlayerMode" Margin="0,0,16,0" />
+                <RadioButton GroupName="pm" Tag="1" Content="Player number" Click="OnPlayerMode" Margin="0,0,16,0" />
+                <RadioButton GroupName="pm" Tag="2" Content="Battery level (1-5 LEDs)" Click="OnPlayerMode" Margin="0,0,16,0" />
+                <RadioButton GroupName="pm" Tag="3" Content="Charging (all lit)" Click="OnPlayerMode" Margin="0,0,16,0" />
               </WrapPanel>
               <WrapPanel x:Name="PlayerNumPanel" Orientation="Horizontal">
-                <RadioButton GroupName="pn" Tag="1" Content="Player 1" Click="OnPlayerNum" Margin="0,0,14,0" />
-                <RadioButton GroupName="pn" Tag="2" Content="Player 2" Click="OnPlayerNum" Margin="0,0,14,0" />
-                <RadioButton GroupName="pn" Tag="3" Content="Player 3" Click="OnPlayerNum" Margin="0,0,14,0" />
-                <RadioButton GroupName="pn" Tag="4" Content="Player 4" Click="OnPlayerNum" Margin="0,0,14,0" />
+                <RadioButton GroupName="pn" Tag="1" Content="Player 1" Click="OnPlayerNum" Margin="0,0,16,0" />
+                <RadioButton GroupName="pn" Tag="2" Content="Player 2" Click="OnPlayerNum" Margin="0,0,16,0" />
+                <RadioButton GroupName="pn" Tag="3" Content="Player 3" Click="OnPlayerNum" Margin="0,0,16,0" />
+                <RadioButton GroupName="pn" Tag="4" Content="Player 4" Click="OnPlayerNum" Margin="0,0,16,0" />
               </WrapPanel>
             </StackPanel>
           </Border>
