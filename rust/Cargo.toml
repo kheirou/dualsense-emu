@@ -1,3 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["dualsense-core", "dualsense-device", "dualsense-gui"]
+
+[profile.release]
+lto = "thin"
+strip = true
