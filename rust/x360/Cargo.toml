@@ -1,0 +1,11 @@
+[package]
+name = "x360"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of the X360Mapper numeric core (Axis, Trigger, Stick), checked against recorded C# output"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+serde_json = "1"

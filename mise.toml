@@ -1,9 +1,10 @@
 [tools]
 dotnet = "9"
+rust = "1.98"
 
 [tasks."dev:ci"]
 description = "Build and test (local merge gate)"
-run = ["dotnet build -c Release --nologo", "dotnet test -c Release --no-build --nologo"]
+run = ["dotnet build -c Release --nologo", "dotnet test -c Release --no-build --nologo", "cargo clippy --manifest-path rust/x360/Cargo.toml --all-targets -- -D warnings", "cargo test --manifest-path rust/x360/Cargo.toml"]
 
 [tasks."dev:publish"]
 description = "Publish a self-contained single-file DualSenseEmu.exe to dist/"
