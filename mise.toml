@@ -36,3 +36,7 @@ run = [
   "Copy-Item rust/target/release/dualsense-gui.exe publish-rust/DualSenseEmu.exe",
   "dotnet vpk pack --packId DualSenseEmu --packVersion $env:usage_version --runtime win-x64 --packDir publish-rust --mainExe DualSenseEmu.exe --packTitle 'DualSense Emulator' --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases-rust",
 ]
+
+[tasks."dev:run:rust"]
+description = "Build and run the Rust GUI (release)"
+run = "cargo run --release -p dualsense-gui --manifest-path rust/Cargo.toml"
