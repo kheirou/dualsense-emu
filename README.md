@@ -34,6 +34,17 @@ mise run dev:publish     # builds dist\DualSenseEmu.exe (self-contained, ~45 MB,
 - Header shows connection (Bluetooth / wired) and battery level with charge state.
 - Live view draws a DualSense and an Xbox 360 pad side by side; pressed buttons light up on both.
 
+## Rust build (work in progress)
+
+`rust/` holds an all-Rust rewrite (`dualsense-core`, `dualsense-device`, `dualsense-gui`), checked against recorded output of the C# code. The C# app above is still the released one.
+
+```powershell
+cd rust; cargo run -p dualsense-gui               # run the Rust window
+mise run dev:release:rust 0.2.0                   # -> releases-rust\DualSenseEmu-win-Setup.exe (~15 MB)
+```
+
+The Rust installer uses the same Velopack package id: publishing a `dev:release:rust` build to the GitHub Release makes existing installs update to the Rust app. Do that only after trying it with a real pad.
+
 ## Hide the real pad (avoid double input)
 
 In the window, switch on "Hide real pad". It uses HidHide (the app can install it) and asks for admin once.

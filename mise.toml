@@ -22,3 +22,17 @@ run = [
   "dotnet publish src/DualSenseEmu.Gui -c Release -r win-x64 --self-contained true --nologo -o publish -p:Version=$env:usage_version",
   "dotnet vpk pack --packId DualSenseEmu --packVersion $env:usage_version --runtime win-x64 --packDir publish --mainExe DualSenseEmu.exe --packTitle 'DualSense Emulator' --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases",
 ]
+
+[tasks."dev:release:rust"]
+description = "Build the Rust installer (releases-rust/DualSenseEmu-win-Setup.exe). Same packId as the C# app: publishing it replaces the C# app for existing installs. Usage: mise run dev:release:rust 0.2.0"
+usage = 'arg "<version>" help="Release version, e.g. 0.2.0"'
+shell = "pwsh -NoProfile -Command"
+run = [
+  "if ($env:usage_version -notmatch '^\\d+\\.\\d+\\.\\d+$') { throw 'version must be x.y.z' }",
+  "if (Test-Path publish-rust) { Remove-Item publish-rust -Recurse -Force }",
+  "dotnet tool restore",
+  "cargo build --release -p dualsense-gui --manifest-path rust/Cargo.toml",
+  "New-Item -ItemType Directory publish-rust | Out-Null",
+  "Copy-Item rust/target/release/dualsense-gui.exe publish-rust/DualSenseEmu.exe",
+  "dotnet vpk pack --packId DualSenseEmu --packVersion $env:usage_version --runtime win-x64 --packDir publish-rust --mainExe DualSenseEmu.exe --packTitle 'DualSense Emulator' --icon src/DualSenseEmu.Gui/Assets/icon.ico --outputDir releases-rust",
+]

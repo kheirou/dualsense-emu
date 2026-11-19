@@ -6,3 +6,5 @@ dist/
 publish/
 releases/
 
+releases-rust/
+publish-rust/

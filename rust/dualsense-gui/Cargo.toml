@@ -9,4 +9,5 @@ dualsense-device = { path = "../dualsense-device" }
 eframe = { version = "0.37.0", default-features = false, features = ["default_fonts", "glow", "system_fonts"] }
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 tray-icon = "0.26.1"
+velopack = "1.2.161"
 winreg = "0.56.0"
