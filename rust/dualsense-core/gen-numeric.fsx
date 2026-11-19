@@ -5,7 +5,7 @@ open DualSenseEmu.Core
 open System.IO
 open System.Globalization
 let f (d: float) = d.ToString("R", CultureInfo.InvariantCulture)
-let w = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "tests", "golden.jsonl"))
+let w = new StreamWriter(Path.Combine(__SOURCE_DIRECTORY__, "tests", "golden", "numeric.jsonl"))
 for v in 0 .. 255 do
     for inv in [false; true] do
         w.WriteLine(sprintf "{\"fn\":\"axis\",\"v\":%d,\"invert\":%b,\"out\":%d}" v inv (X360Mapper.Axis(byte v, inv)))
