@@ -114,6 +114,7 @@ pub struct App {
     status: Arc<Mutex<EmuStatus>>,
     profile: MapProfile,
     profile_path: PathBuf,
+    dirty: bool, // profile changed, not yet saved
     tab: Tab,
     remap_sel: DsButton,
     hex_text: String,
@@ -186,6 +187,7 @@ impl App {
             status,
             profile,
             profile_path,
+            dirty: false,
             tab: Tab::Dashboard,
             remap_sel: DsButton::Cross,
             hex_text,
@@ -210,7 +212,7 @@ impl App {
 
     fn apply(&mut self) {
         self.emu.set_profile(self.profile.clone());
-        let _ = self.profile.save(&self.profile_path); // a read-only profile folder must not stop the pad
+        self.dirty = true; // saved once the pointer is released, not on every slider tick
     }
 
     fn poll(&mut self, ctx: &egui::Context) {
@@ -263,6 +265,10 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         ctx.request_repaint_after(Duration::from_millis(33));
+        if self.dirty && !ctx.input(|i| i.pointer.any_down()) {
+            self.dirty = false;
+            let _ = self.profile.save(&self.profile_path); // a read-only profile folder must not stop the pad
+        }
         egui::Frame::new()
             .fill(BG)
             .inner_margin(Margin::same(24))
