@@ -95,7 +95,7 @@ impl Shared {
 
 pub struct EmulatorService {
     shared: Arc<Shared>,
-    task: Option<JoinHandle<()>>,
+    task: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl EmulatorService {
@@ -116,19 +116,19 @@ impl EmulatorService {
         };
         Self {
             shared: Arc::new(shared),
-            task: None,
+            task: Mutex::new(None),
         }
     }
 
     /// Start emulating; also starts the reader thread if it is not running.
-    pub fn start(&mut self) {
+    pub fn start(&self) {
         self.shared.emulating.store(true, Relaxed);
         if self.is_running() {
             return;
         }
         self.shared.stop.store(false, Relaxed);
         let shared = Arc::clone(&self.shared);
-        self.task = Some(std::thread::spawn(move || run(&shared)));
+        *lock(&self.task) = Some(std::thread::spawn(move || run(&shared)));
     }
 
     /// Stop emulating; the pad keeps being read (battery, lightbar). Drop ends the reader.
@@ -137,7 +137,7 @@ impl EmulatorService {
     }
 
     pub fn is_running(&self) -> bool {
-        self.task.as_ref().is_some_and(|t| !t.is_finished())
+        lock(&self.task).as_ref().is_some_and(|t| !t.is_finished())
     }
 
     pub fn is_emulating(&self) -> bool {
@@ -181,7 +181,7 @@ impl EmulatorService {
 impl Drop for EmulatorService {
     fn drop(&mut self) {
         self.shared.stop.store(true, Relaxed);
-        if let Some(t) = self.task.take() {
+        if let Some(t) = lock(&self.task).take() {
             let _ = t.join();
         }
     }

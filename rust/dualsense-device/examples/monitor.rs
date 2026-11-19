@@ -6,7 +6,7 @@ use dualsense_device::service::EmulatorService;
 use std::time::Duration;
 
 fn main() {
-    let mut service = EmulatorService::new(MapProfile::load(&MapProfile::default_path()), |s| {
+    let service = EmulatorService::new(MapProfile::load(&MapProfile::default_path()), |s| {
         println!("status: {:?} - {}", s.state, s.message)
     });
     service.start();

@@ -1,0 +1,12 @@
+[package]
+name = "dualsense-gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dualsense-core = { path = "../dualsense-core" }
+dualsense-device = { path = "../dualsense-device" }
+eframe = { version = "0.37.0", default-features = false, features = ["default_fonts", "glow", "system_fonts"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+tray-icon = "0.26.1"
+winreg = "0.56.0"
