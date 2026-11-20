@@ -47,7 +47,7 @@ const NAV: [(Tab, &str, Color32); 5] = [
     (Tab::Lightbar, "Lightbar", GREEN),
     (Tab::Settings, "Settings", ACCENT),
 ];
-const PAD_SCALE: f32 = 1.0;
+const PAD_SCALE: f32 = 1.2;
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const RUN_VALUE: &str = "DualSenseEmu";
