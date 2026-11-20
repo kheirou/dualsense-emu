@@ -451,8 +451,14 @@ fn card(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
     egui::Frame::new()
         .fill(CARD)
         .stroke(Stroke::new(1.0, BORDER))
-        .corner_radius(12)
+        .corner_radius(14)
         .inner_margin(Margin::same(20))
+        .shadow(egui::Shadow {
+            offset: [0, 4],
+            blur: 16,
+            spread: 0,
+            color: Color32::from_black_alpha(90),
+        })
         .show(ui, |ui| ui.vertical(add));
 }
 
@@ -1156,6 +1162,27 @@ fn style(ctx: &egui::Context) {
     v.widgets.hovered.weak_bg_fill = HOVER;
     v.widgets.hovered.bg_fill = HOVER;
     v.selection.bg_fill = ACCENT.gamma_multiply(0.5);
+    v.selection.stroke = Stroke::new(1.0, ACCENT);
+    // one look for every widget: rounded, hairline border, accent when pressed, no hover jitter
+    v.widgets.inactive.bg_stroke = Stroke::new(1.0, BORDER);
+    v.widgets.hovered.bg_stroke = Stroke::new(1.0, TILE_OFF);
+    v.widgets.active.bg_fill = ACCENT.gamma_multiply(0.35);
+    v.widgets.active.weak_bg_fill = ACCENT.gamma_multiply(0.35);
+    v.widgets.active.bg_stroke = Stroke::new(1.0, ACCENT);
+    for w in [
+        &mut v.widgets.noninteractive,
+        &mut v.widgets.inactive,
+        &mut v.widgets.hovered,
+        &mut v.widgets.active,
+        &mut v.widgets.open,
+    ] {
+        w.corner_radius = CornerRadius::same(8);
+        w.expansion = 0.0;
+    }
+    ctx.style_mut_of(egui::Theme::Dark, |s| {
+        s.spacing.button_padding = Vec2::new(14.0, 7.0);
+        s.spacing.interact_size.y = 30.0;
+    });
     ctx.set_theme(egui::ThemePreference::Dark); // the system theme must not pick light visuals
     ctx.set_visuals_of(egui::Theme::Dark, v);
 }
