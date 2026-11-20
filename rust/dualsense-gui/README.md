@@ -1,6 +1,6 @@
 # dualsense-gui
 
-egui window for the all-Rust rewrite: Dashboard (on/off dial, status, hide real pad, start with Windows, live pad diagrams), Sticks, Buttons (remap), Lightbar. Tray icon (closing the window hides it; tray menu: Show / Exit), one instance at a time, `--tray` starts hidden. Uses `dualsense-core` and `dualsense-device`.
+egui window for the all-Rust rewrite. Dark sidebar + cream panel: Home (hero with Start/Stop, live pad diagrams, summary cards), Sticks, Buttons (remap), Lightbar, Settings (hide real pad, start with Windows). Tray icon (closing the window hides it; tray menu: Show / Exit), one instance at a time, `--tray` starts hidden. Uses `dualsense-core` and `dualsense-device`.
 
 Run: `cargo run -p dualsense-gui` (from `rust/`).
 

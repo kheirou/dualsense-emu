@@ -1,4 +1,4 @@
-//! The window: header, Dashboard / Sticks / Buttons / Lightbar tabs. Mirrors the Avalonia GUI it replaces.
+//! The window: sidebar + Home / Sticks / Buttons / Lightbar / Settings pages. Mirrors the Avalonia GUI it replaces.
 
 use crate::padview::{self, PadInput};
 use dualsense_core::output::parse_colour;
@@ -8,7 +8,8 @@ use dualsense_device::hidhide;
 use dualsense_device::service::{EmuState, EmuStatus, EmulatorService, Transport};
 use dualsense_device::status_file;
 use eframe::egui::{
-    self, Color32, CornerRadius, FontId, Margin, RichText, Sense, Stroke, StrokeKind, Vec2,
+    self, Align2, Color32, CornerRadius, FontId, Margin, Rect, RichText, Sense, Shape, Stroke,
+    StrokeKind, Vec2,
 };
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -18,20 +19,35 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-const BG: Color32 = Color32::from_rgb(0x0B, 0x0D, 0x14);
-const CARD: Color32 = Color32::from_rgb(0x11, 0x14, 0x1C);
-const RAISED: Color32 = Color32::from_rgb(0x1A, 0x1E, 0x28);
-const HOVER: Color32 = Color32::from_rgb(0x23, 0x28, 0x36);
-const BORDER: Color32 = Color32::from_rgb(0x1D, 0x20, 0x29);
-const TILE_OFF: Color32 = Color32::from_rgb(0x26, 0x2B, 0x38);
-const TEXT: Color32 = Color32::from_rgb(0xEE, 0xF0, 0xF5);
-const SOFT: Color32 = Color32::from_rgb(0xA3, 0xA9, 0xB8);
-const DIM: Color32 = Color32::from_rgb(0x7A, 0x82, 0x96);
-const ACCENT: Color32 = Color32::from_rgb(0x4F, 0xB7, 0xD6);
-const AMBER: Color32 = Color32::from_rgb(0xE0, 0xA2, 0x3F);
-const GREEN: Color32 = Color32::from_rgb(0x4C, 0xC3, 0x8A);
-const RED: Color32 = Color32::from_rgb(0xE5, 0x48, 0x4D);
-const PAD_SCALE: f32 = 1.2;
+// Cream main panel on a tan window, dark sidebar; the hero and live strip are dark scenes.
+const TAN: Color32 = Color32::from_rgb(0xB9, 0xB2, 0xA4);
+const SIDEBAR: Color32 = Color32::from_rgb(0x2A, 0x27, 0x33);
+const SIDE_ON: Color32 = Color32::from_rgb(0x3A, 0x36, 0x45);
+const SIDE_TEXT: Color32 = Color32::from_rgb(0xF2, 0xED, 0xE0);
+const SIDE_DIM: Color32 = Color32::from_rgb(0x9D, 0x98, 0xA8);
+const SCENE_DIM: Color32 = Color32::from_rgb(0xC3, 0xD3, 0xCF);
+const CREAM: Color32 = Color32::from_rgb(0xEB, 0xE5, 0xD7);
+const CARD: Color32 = Color32::from_rgb(0xE2, 0xDB, 0xC9);
+const RAISED: Color32 = Color32::from_rgb(0xD8, 0xD0, 0xBB);
+const HOVER: Color32 = Color32::from_rgb(0xCE, 0xC5, 0xAE);
+const BORDER: Color32 = Color32::from_rgb(0xCF, 0xC7, 0xB2);
+const OUTLINE: Color32 = Color32::from_rgb(0xA3, 0x9A, 0x82);
+const TILE_OFF: Color32 = Color32::from_rgb(0xBF, 0xB6, 0x9F);
+const TEXT: Color32 = Color32::from_rgb(0x22, 0x1F, 0x27);
+const SOFT: Color32 = Color32::from_rgb(0x4B, 0x46, 0x40);
+const DIM: Color32 = Color32::from_rgb(0x70, 0x6A, 0x5C);
+const ACCENT: Color32 = Color32::from_rgb(0x3A, 0x66, 0xB0);
+const AMBER: Color32 = Color32::from_rgb(0xC9, 0x8A, 0x1B);
+const GREEN: Color32 = Color32::from_rgb(0x3B, 0x8A, 0x55);
+const RED: Color32 = Color32::from_rgb(0xC2, 0x44, 0x3E);
+const NAV: [(Tab, &str, Color32); 5] = [
+    (Tab::Dashboard, "Home", SIDE_TEXT),
+    (Tab::Sticks, "Sticks", RED),
+    (Tab::Buttons, "Buttons", AMBER),
+    (Tab::Lightbar, "Lightbar", GREEN),
+    (Tab::Settings, "Settings", ACCENT),
+];
+const PAD_SCALE: f32 = 1.0;
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const RUN_VALUE: &str = "DualSenseEmu";
@@ -92,6 +108,7 @@ enum Tab {
     Sticks,
     Buttons,
     Lightbar,
+    Settings,
 }
 
 /// Results of work done off the UI thread (UAC prompts and installs block for a long time).
@@ -281,49 +298,45 @@ impl eframe::App for App {
             self.dirty = false;
             let _ = self.profile.save(&self.profile_path); // a read-only profile folder must not stop the pad
         }
-        egui::Frame::new()
-            .fill(BG)
-            .inner_margin(Margin::same(24))
-            .show(ui, |ui| {
-                self.header(ui);
-                ui.add_space(16.0);
-                ui.horizontal(|ui| {
-                    for (tab, name) in [
-                        (Tab::Dashboard, "Dashboard"),
-                        (Tab::Sticks, "Sticks"),
-                        (Tab::Buttons, "Buttons"),
-                        (Tab::Lightbar, "Lightbar"),
-                    ] {
-                        let on = self.tab == tab;
-                        let text =
-                            RichText::new(name)
-                                .size(15.0)
-                                .color(if on { TEXT } else { DIM });
-                        if ui
-                            .add(
-                                egui::Button::new(text)
-                                    .fill(if on { RAISED } else { Color32::TRANSPARENT })
-                                    .stroke(Stroke::NONE)
-                                    .min_size(Vec2::new(96.0, 32.0)),
-                            )
-                            .clicked()
-                        {
-                            self.tab = tab;
-                        }
+        let full = ui.max_rect().shrink(12.0);
+        let side = Rect::from_min_size(full.min, Vec2::new(190.0, full.height()));
+        let main = Rect::from_min_max(egui::pos2(side.max.x + 12.0, full.min.y), full.max);
+        ui.painter().rect_filled(side, 18, SIDEBAR);
+        ui.painter().rect_filled(main, 18, CREAM);
+        ui.scope_builder(egui::UiBuilder::new().max_rect(side.shrink(14.0)), |ui| {
+            self.sidebar(ui)
+        });
+        ui.scope_builder(egui::UiBuilder::new().max_rect(main.shrink(20.0)), |ui| {
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                    let title = match self.tab {
+                        Tab::Dashboard => None,
+                        Tab::Sticks => Some("Sticks and triggers"),
+                        Tab::Buttons => Some("Button remapping"),
+                        Tab::Lightbar => Some("Lightbar and player LEDs"),
+                        Tab::Settings => Some("Settings"),
+                    };
+                    if let Some(t) = title {
+                        ui.label(RichText::new(t).size(22.0).color(TEXT));
+                        ui.add_space(10.0);
+                    }
+                    match self.tab {
+                        Tab::Dashboard => self.dashboard(ui),
+                        Tab::Sticks => self.sticks(ui),
+                        Tab::Buttons => self.buttons(ui),
+                        Tab::Lightbar => self.lightbar(ui),
+                        Tab::Settings => card(ui, |ui| {
+                            ui.set_width(ui.available_width().max(0.0));
+                            self.settings(ui, &ctx);
+                        }),
                     }
                 });
-                ui.add_space(8.0);
-                match self.tab {
-                    Tab::Dashboard => self.dashboard(ui, &ctx),
-                    Tab::Sticks => self.sticks(ui),
-                    Tab::Buttons => self.buttons(ui),
-                    Tab::Lightbar => self.lightbar(ui),
-                }
-            });
+        });
     }
 
     fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
-        BG.to_normalized_gamma_f32()
+        TAN.to_normalized_gamma_f32()
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
@@ -335,116 +348,356 @@ impl eframe::App for App {
     }
 }
 
-// ---------- header ----------
+// ---------- shell: sidebar, hero, tiles ----------
 
 impl App {
-    fn header(&mut self, ui: &mut egui::Ui) {
-        let snap = self.emu.latest();
-        let transport = self.emu.transport();
+    fn sidebar(&mut self, ui: &mut egui::Ui) {
+        let rect = ui.max_rect();
         let icon = self.icon.clone();
         ui.horizontal(|ui| {
             ui.add(
                 egui::Image::new(&icon)
-                    .fit_to_exact_size(Vec2::splat(40.0))
-                    .corner_radius(10),
+                    .fit_to_exact_size(Vec2::splat(30.0))
+                    .corner_radius(8),
             );
-            ui.add_space(8.0);
-            ui.vertical(|ui| {
-                ui.label(RichText::new("DualSense Emulator").size(24.0).color(TEXT));
-                ui.label(
-                    RichText::new("Your DualSense as a virtual Xbox 360 pad")
-                        .size(14.0)
-                        .color(DIM),
-                );
-            });
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                // right to left: battery pill first (rightmost), then the connection pill
-                pill(ui, |ui| {
-                    let (rect, _) = ui.allocate_exact_size(Vec2::new(32.0, 14.0), Sense::hover());
-                    let p = ui.painter();
-                    let body = egui::Rect::from_min_size(rect.min, Vec2::new(28.0, 14.0));
-                    p.rect_stroke(
-                        body,
-                        CornerRadius::same(3),
-                        Stroke::new(1.0, DIM),
-                        StrokeKind::Inside,
-                    );
-                    p.rect_filled(
-                        egui::Rect::from_min_size(
-                            egui::pos2(rect.max.x - 3.0, rect.min.y + 4.0),
-                            Vec2::new(3.0, 6.0),
-                        ),
-                        CornerRadius::same(1),
-                        DIM,
-                    );
-                    let (text, charge) = match snap
-                        .as_ref()
-                        .map(|s| s.ds)
-                        .filter(|d| d.battery_percent >= 0)
-                    {
-                        Some(d) => {
-                            let colour = if d.charge == ChargeState::Charging {
-                                ACCENT
-                            } else if d.battery_percent < 20 {
-                                RED
-                            } else if d.battery_percent < 40 {
-                                AMBER
-                            } else {
-                                GREEN
-                            };
-                            let w = 24.0 * d.battery_percent as f32 / 100.0;
-                            p.rect_filled(
-                                egui::Rect::from_min_size(
-                                    body.min + Vec2::splat(2.0),
-                                    Vec2::new(w, 10.0),
-                                ),
-                                CornerRadius::same(2),
-                                colour,
-                            );
-                            let c = match d.charge {
-                                ChargeState::Charging => "Charging",
-                                ChargeState::Full => "Full",
-                                _ => "",
-                            };
-                            (format!("{}%", d.battery_percent), c)
-                        }
-                        None => ("--".to_string(), ""),
-                    };
-                    ui.label(RichText::new(text).size(14.0).color(TEXT));
-                    ui.label(RichText::new(charge).size(14.0).color(SOFT));
-                });
-                pill(ui, |ui| {
-                    let (dot, _) = ui.allocate_exact_size(Vec2::splat(8.0), Sense::hover());
-                    ui.painter().circle_filled(
-                        dot.center(),
-                        4.0,
-                        if transport == Transport::None {
-                            DIM
-                        } else {
-                            GREEN
-                        },
-                    );
-                    let t = match transport {
-                        Transport::Bluetooth => "Bluetooth",
-                        Transport::Usb => "USB cable",
-                        Transport::None => "Not connected",
-                    };
-                    ui.label(RichText::new(t).size(14.0).color(TEXT));
-                });
-            });
+            ui.label(RichText::new("DualSense Emu").size(18.0).color(SIDE_TEXT));
         });
+        ui.add_space(18.0);
+        for (tab, name, tick) in NAV {
+            let (r, resp) =
+                ui.allocate_exact_size(Vec2::new(ui.available_width(), 38.0), Sense::click());
+            let on = self.tab == tab;
+            let p = ui.painter();
+            if on || resp.hovered() {
+                p.rect_filled(r, 10, if on { SIDE_ON } else { SIDE_ON.gamma_multiply(0.5) });
+            }
+            let tick = if on { tick } else { tick.gamma_multiply(0.5) };
+            p.rect_filled(
+                Rect::from_min_size(r.min + Vec2::new(0.0, 11.0), Vec2::new(3.0, 16.0)),
+                2,
+                tick,
+            );
+            p.text(
+                r.min + Vec2::new(18.0, 19.0),
+                Align2::LEFT_CENTER,
+                name,
+                FontId::proportional(15.0),
+                if on { SIDE_TEXT } else { SIDE_DIM },
+            );
+            if resp.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+            }
+            if resp.clicked() {
+                self.tab = tab;
+            }
+        }
+        let (transport, dot) = match self.emu.transport() {
+            Transport::Bluetooth => ("Bluetooth", GREEN),
+            Transport::Usb => ("USB", GREEN),
+            Transport::None => ("No pad", SIDE_DIM),
+        };
+        let pill = Rect::from_min_size(
+            egui::pos2(rect.min.x, rect.max.y - 44.0),
+            Vec2::new(rect.width(), 44.0),
+        );
+        let p = ui.painter();
+        p.rect_filled(pill, 12, SIDE_ON);
+        p.text(
+            pill.left_center() + Vec2::new(12.0, 0.0),
+            Align2::LEFT_CENTER,
+            concat!("v", env!("CARGO_PKG_VERSION")),
+            FontId::proportional(14.0),
+            SIDE_TEXT,
+        );
+        p.circle_filled(pill.right_center() - Vec2::new(66.0, 0.0), 4.0, dot);
+        p.text(
+            pill.right_center() - Vec2::new(12.0, 0.0),
+            Align2::RIGHT_CENTER,
+            transport,
+            FontId::proportional(12.0),
+            SIDE_DIM,
+        );
+    }
+
+    fn hero(&mut self, ui: &mut egui::Ui, status: &EmuStatus, active: bool) {
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 230.0), Sense::hover());
+        paint_scene(ui.painter(), rect);
+        let snap = self.emu.latest();
+        let word = match status.state {
+            EmuState::Running => "Emulating",
+            EmuState::Waiting => "Waiting for pad",
+            EmuState::Error => "Error",
+            EmuState::DriverMissing => "Driver missing",
+            EmuState::Stopped => "Off",
+        };
+        let transport = match self.emu.transport() {
+            Transport::Bluetooth => "Bluetooth",
+            Transport::Usb => "USB cable",
+            Transport::None => "Not connected",
+        };
+        let battery = snap
+            .as_ref()
+            .map(|s| s.ds)
+            .filter(|d| d.battery_percent >= 0)
+            .map_or("--".to_string(), |d| {
+                let c = match d.charge {
+                    ChargeState::Charging => " charging",
+                    ChargeState::Full => " full",
+                    _ => "",
+                };
+                format!("{}%{c}", d.battery_percent)
+            });
+        let note = self.vigem_note.clone().unwrap_or_else(|| {
+            if status.state == EmuState::Running {
+                "Games see an Xbox 360 pad.".into()
+            } else {
+                status.message.clone()
+            }
+        });
+        let p = ui.painter().clone();
+        p.text(
+            rect.min + Vec2::new(24.0, 20.0),
+            Align2::LEFT_TOP,
+            "Controller emulation",
+            FontId::proportional(30.0),
+            SIDE_TEXT,
+        );
+        let g = p.layout(note, FontId::proportional(14.0), SIDE_TEXT, rect.width() * 0.6);
+        p.galley(rect.min + Vec2::new(24.0, 62.0), g, SIDE_TEXT);
+        for (i, (k, v)) in [
+            ("Pad", transport.to_string()),
+            ("Battery", battery),
+            ("Emulation", word.to_string()),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let x = rect.min.x + 24.0 + i as f32 * 150.0;
+            p.text(
+                egui::pos2(x, rect.max.y - 66.0),
+                Align2::LEFT_TOP,
+                k,
+                FontId::proportional(16.0),
+                SIDE_TEXT,
+            );
+            p.text(
+                egui::pos2(x, rect.max.y - 42.0),
+                Align2::LEFT_TOP,
+                v,
+                FontId::proportional(12.5),
+                SCENE_DIM,
+            );
+        }
+        if status.state == EmuState::DriverMissing {
+            let r = Rect::from_min_size(rect.min + Vec2::new(24.0, 100.0), Vec2::new(190.0, 30.0));
+            if ui.put(r, egui::Button::new("Install ViGEmBus driver")).clicked() {
+                self.vigem_note = Some("Installing ViGEmBus (approve the prompt)...".into());
+                let (tx, ctx) = (self.tx.clone(), ui.ctx().clone());
+                std::thread::spawn(move || {
+                    let _ = tx.send(Msg::VigemInstalled(hidhide::install(
+                        hidhide::VIGEM_BUS_PACKAGE,
+                    )));
+                    ctx.request_repaint();
+                });
+            }
+        }
+        // the big button: green Start, amber Stop, pressed in on click
+        let br = Rect::from_min_size(
+            egui::pos2(rect.max.x - 24.0 - 200.0, rect.max.y - 24.0 - 52.0),
+            Vec2::new(200.0, 52.0),
+        );
+        let resp = ui.interact(br, ui.scope_id().with("play"), Sense::click());
+        let (face, lip, label) = if active {
+            (AMBER, Color32::from_rgb(0x8F, 0x5F, 0x10), "Stop")
+        } else {
+            (GREEN, Color32::from_rgb(0x2A, 0x62, 0x3C), "Start")
+        };
+        let down = if resp.is_pointer_button_down_on() { 3.0 } else { 0.0 };
+        let f = br.translate(Vec2::new(0.0, down));
+        p.rect_filled(br.translate(Vec2::new(0.0, 4.0)), 14, lip);
+        p.rect_filled(f, 14, if resp.hovered() { face.gamma_multiply(1.1) } else { face });
+        p.text(f.center(), Align2::CENTER_CENTER, label, FontId::proportional(20.0), SIDE_TEXT);
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        if resp.clicked() {
+            if self.emu.is_emulating() {
+                self.emu.stop()
+            } else {
+                self.emu.start()
+            }
+        }
+    }
+
+    fn tiles(&mut self, ui: &mut egui::Ui) {
+        let w = (ui.available_width() - 36.0) / 4.0;
+        let p = &self.profile;
+        let sticks = format!(
+            "Deadzone {:.0}% · Curve {:.1}",
+            p.left_deadzone * 100.0,
+            p.curve
+        );
+        let flags = format!(
+            "Invert Y {} · Swap {}",
+            if p.invert_left_y && p.invert_right_y { "on" } else { "off" },
+            if p.swap_sticks { "on" } else { "off" }
+        );
+        let remaps = p.remap.as_ref().map_or(0, |m| m.len());
+        let maps = if remaps == 0 {
+            "No remaps".to_string()
+        } else {
+            format!("{remaps} remapped")
+        };
+        let bar = match p.lightbar_mode {
+            LightbarMode::Static => p
+                .lightbar
+                .clone()
+                .unwrap_or_else(|| "Pad's own colour".into()),
+            LightbarMode::Battery => "Battery level".into(),
+            LightbarMode::Charging => "Charging status".into(),
+        };
+        let leds = match p.player_mode {
+            PlayerLedMode::Leave => "Player LEDs as is",
+            PlayerLedMode::Player => "Player LEDs: number",
+            PlayerLedMode::Battery => "Player LEDs: battery",
+            PlayerLedMode::Charging => "Player LEDs: charging",
+        };
+        let hide = if !self.hide.installed {
+            "HidHide missing"
+        } else if self.hide.on {
+            "Real pad hidden"
+        } else {
+            "Real pad visible"
+        };
+        let startup = format!(
+            "Start with Windows: {}",
+            if self.startup_on { "on" } else { "off" }
+        );
+        let mut go = None;
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = 12.0;
+            if tile(ui, w, RED, "Sticks", &sticks, &flags, "Change") {
+                go = Some(Tab::Sticks);
+            }
+            if tile(ui, w, AMBER, "Buttons", &maps, "Pick a button, choose what it acts as", "Change") {
+                go = Some(Tab::Buttons);
+            }
+            if tile(ui, w, GREEN, "Lightbar", &bar, leds, "Change") {
+                go = Some(Tab::Lightbar);
+            }
+            if tile(ui, w, ACCENT, "System", hide, &startup, "Manage") {
+                go = Some(Tab::Settings);
+            }
+        });
+        if let Some(t) = go {
+            self.tab = t;
+        }
+        ui.add_space(6.0);
+        ui.label(
+            RichText::new("Changes reach the pad instantly and are saved when you let go.")
+                .size(12.0)
+                .color(DIM),
+        );
     }
 }
 
-fn pill(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
-    egui::Frame::new()
-        .fill(CARD)
-        .stroke(Stroke::new(1.0, BORDER))
-        .corner_radius(8)
-        .inner_margin(Margin::symmetric(12, 8))
-        .show(ui, |ui| {
-            ui.horizontal(add);
-        });
+/// A coloured-top summary card; true when clicked.
+fn tile(
+    ui: &mut egui::Ui,
+    w: f32,
+    top: Color32,
+    title: &str,
+    big: &str,
+    small: &str,
+    link: &str,
+) -> bool {
+    let (r, resp) = ui.allocate_exact_size(Vec2::new(w, 150.0), Sense::click());
+    let p = ui.painter();
+    p.rect_filled(r, 12, if resp.hovered() { RAISED } else { CARD });
+    p.rect_filled(
+        Rect::from_min_size(r.min, Vec2::new(w, 5.0)),
+        CornerRadius { nw: 12, ne: 12, sw: 0, se: 0 },
+        top,
+    );
+    p.text(r.min + Vec2::new(14.0, 18.0), Align2::LEFT_TOP, title, FontId::proportional(13.0), DIM);
+    let g = p.layout(big.to_string(), FontId::proportional(15.0), TEXT, w - 28.0);
+    let h = g.size().y;
+    p.galley(r.min + Vec2::new(14.0, 38.0), g, TEXT);
+    let g = p.layout(small.to_string(), FontId::proportional(12.5), SOFT, w - 28.0);
+    p.galley(r.min + Vec2::new(14.0, 46.0 + h), g, SOFT);
+    p.text(
+        egui::pos2(r.min.x + 14.0, r.max.y - 20.0),
+        Align2::LEFT_CENTER,
+        format!("{link} ›"),
+        FontId::proportional(13.0),
+        top,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// The hero backdrop: sky gradient, sun, mountain, two hills. Hand-drawn so it needs no image file.
+fn paint_scene(p: &egui::Painter, r: Rect) {
+    const TOP: Color32 = Color32::from_rgb(0x24, 0x55, 0x80);
+    const HORIZON: Color32 = Color32::from_rgb(0x7F, 0xB0, 0xC4);
+    const FAR: Color32 = Color32::from_rgb(0x4F, 0x7B, 0x78);
+    const GROUND: Color32 = Color32::from_rgb(0x1B, 0x3B, 0x37);
+    let (x0, x1) = (r.min.x, r.max.x);
+    let (top, hz, bot) = (r.min.y + 16.0, r.min.y + r.height() * 0.55, r.max.y - 16.0);
+    p.rect_filled(r, 16, GROUND);
+    p.rect_filled(
+        Rect::from_min_max(r.min, egui::pos2(x1, top + 1.0)),
+        CornerRadius { nw: 16, ne: 16, sw: 0, se: 0 },
+        TOP,
+    );
+    let mut sky = egui::Mesh::default();
+    for (x, y, c) in [(x0, top, TOP), (x1, top, TOP), (x1, hz, HORIZON), (x0, hz, HORIZON)] {
+        sky.colored_vertex(egui::pos2(x, y), c);
+    }
+    sky.add_triangle(0, 1, 2);
+    sky.add_triangle(0, 2, 3);
+    p.add(sky);
+    let sun = egui::pos2(x1 - 70.0, r.min.y + 60.0);
+    p.circle_filled(sun, 40.0, Color32::from_white_alpha(22));
+    p.circle_filled(sun, 22.0, Color32::from_rgb(0xFA, 0xEE, 0xC6));
+    p.add(Shape::convex_polygon(
+        vec![
+            egui::pos2(x1 - 330.0, hz + 20.0),
+            egui::pos2(x1 - 250.0, hz - 60.0),
+            egui::pos2(x1 - 170.0, hz + 20.0),
+        ],
+        Color32::from_rgb(0x5C, 0x5E, 0x80),
+        Stroke::NONE,
+    ));
+    hill(p, (x0, x1), (hz + 15.0, 12.0, 0.0), bot, FAR);
+    hill(p, (x0, x1), (hz + 55.0, 18.0, 2.0), bot, GROUND);
+}
+
+/// A filled sine hill: `(base, amplitude, phase)` down to `bot`.
+fn hill(
+    p: &egui::Painter,
+    (x0, x1): (f32, f32),
+    (base, amp, phase): (f32, f32, f32),
+    bot: f32,
+    col: Color32,
+) {
+    const N: u32 = 40;
+    let mut m = egui::Mesh::default();
+    for i in 0..=N {
+        let t = i as f32 / N as f32;
+        let x = x0 + (x1 - x0) * t;
+        m.colored_vertex(egui::pos2(x, base + amp * (t * 6.0 + phase).sin()), col);
+        m.colored_vertex(egui::pos2(x, bot), col);
+    }
+    for i in 0..N {
+        let a = 2 * i;
+        m.add_triangle(a, a + 1, a + 2);
+        m.add_triangle(a + 1, a + 3, a + 2);
+    }
+    p.add(m);
 }
 
 fn card(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
@@ -453,19 +706,13 @@ fn card(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
         .stroke(Stroke::new(1.0, BORDER))
         .corner_radius(14)
         .inner_margin(Margin::same(20))
-        .shadow(egui::Shadow {
-            offset: [0, 4],
-            blur: 16,
-            spread: 0,
-            color: Color32::from_black_alpha(90),
-        })
         .show(ui, |ui| ui.vertical(add));
 }
 
 // ---------- dashboard ----------
 
 impl App {
-    fn dashboard(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn dashboard(&mut self, ui: &mut egui::Ui) {
         let status = self
             .status
             .lock()
@@ -475,126 +722,11 @@ impl App {
             status.state,
             EmuState::Running | EmuState::Waiting | EmuState::Error | EmuState::DriverMissing
         ); // it keeps retrying until stopped
-        ui.horizontal_top(|ui| {
-            ui.allocate_ui(Vec2::new(480.0, 0.0), |ui| {
-                ui.set_width(480.0);
-                card(ui, |ui| {
-                    ui.set_width(440.0);
-                    ui.label(
-                        RichText::new("Controller management")
-                            .size(20.0)
-                            .color(TEXT),
-                    );
-                    ui.add_space(12.0);
-                    ui.horizontal(|ui| {
-                        if knob(ui, active)
-                            .on_hover_text("Click to turn emulation on or off")
-                            .clicked()
-                        {
-                            if status.state == EmuState::Stopped {
-                                self.emu.start()
-                            } else {
-                                self.emu.stop()
-                            }
-                        }
-                        ui.vertical(|ui| {
-                            let w = ui.available_width();
-                            if mode_button(
-                                ui,
-                                "Emulate Xbox gamepad",
-                                w,
-                                if active { Some(ACCENT) } else { None },
-                            )
-                            .clicked()
-                            {
-                                self.emu.start();
-                            }
-                            ui.add_space(8.0);
-                            if mode_button(
-                                ui,
-                                "Passthrough (off)",
-                                w,
-                                if active { None } else { Some(AMBER) },
-                            )
-                            .clicked()
-                            {
-                                self.emu.stop();
-                            }
-                        });
-                    });
-                    ui.add_space(16.0);
-                    self.status_panel(ui, &status, active);
-                    ui.add_space(16.0);
-                    self.settings(ui, ctx);
-                });
-            });
-            self.live_card(ui);
-        });
-    }
-
-    fn status_panel(&mut self, ui: &mut egui::Ui, status: &EmuStatus, active: bool) {
-        let (colour, word) = match status.state {
-            EmuState::Running => (GREEN, "Emulating"),
-            EmuState::Waiting => (AMBER, "Waiting"),
-            EmuState::Error => (RED, "Error"),
-            EmuState::DriverMissing => (RED, "No driver"),
-            EmuState::Stopped => (DIM, "Off"),
-        };
-        egui::Frame::new()
-            .fill(RAISED)
-            .stroke(Stroke::new(1.0, BORDER))
-            .corner_radius(10)
-            .inner_margin(Margin::same(16))
-            .show(ui, |ui| {
-                ui.set_width(ui.available_width());
-                ui.vertical_centered(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.add_space(ui.available_width() / 2.0 - 70.0);
-                        let (dot, _) = ui.allocate_exact_size(Vec2::splat(12.0), Sense::hover());
-                        ui.painter().circle_filled(dot.center(), 6.0, colour);
-                        ui.label(RichText::new("Status  ").size(18.0).color(SOFT));
-                        ui.label(RichText::new(word).size(18.0).color(colour));
-                    });
-                    let note = self.vigem_note.clone().unwrap_or_else(|| {
-                        if status.state == EmuState::Running {
-                            "games see an Xbox 360 pad".into()
-                        } else {
-                            status.message.clone()
-                        }
-                    });
-                    ui.label(RichText::new(note).size(14.0).color(DIM));
-                    if status.state == EmuState::DriverMissing
-                        && ui.button("Install ViGEmBus driver").clicked()
-                    {
-                        self.vigem_note =
-                            Some("Installing ViGEmBus (approve the prompt)...".into());
-                        let (tx, ctx) = (self.tx.clone(), ui.ctx().clone());
-                        std::thread::spawn(move || {
-                            let _ = tx.send(Msg::VigemInstalled(hidhide::install(
-                                hidhide::VIGEM_BUS_PACKAGE,
-                            )));
-                            ctx.request_repaint();
-                        });
-                    }
-                    ui.add_space(8.0);
-                    let label = if active {
-                        "Stop emulation"
-                    } else {
-                        "Start emulation"
-                    };
-                    let go = egui::Button::new(RichText::new(label).size(15.0).color(BG))
-                        .fill(TEXT)
-                        .corner_radius(10)
-                        .min_size(Vec2::new(0.0, 40.0));
-                    if ui.add(go).clicked() {
-                        if self.emu.is_emulating() {
-                            self.emu.stop()
-                        } else {
-                            self.emu.start()
-                        }
-                    }
-                });
-            });
+        self.hero(ui, &status, active);
+        ui.add_space(12.0);
+        self.live_card(ui);
+        ui.add_space(12.0);
+        self.tiles(ui);
     }
 
     fn settings(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
@@ -671,58 +803,60 @@ impl App {
         let ds_buttons = ds.map_or(0, |d| d.buttons);
         let x_buttons = x.map_or(0, |x| x.buttons);
         let (lx, ly, rx, ry) = ds.map_or((128, 128, 128, 128), |d| (d.lx, d.ly, d.rx, d.ry));
-        card(ui, |ui| {
-            ui.set_width(ui.available_width().max(0.0));
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("Live input").size(16.0).color(TEXT));
-                ui.label(
-                    RichText::new("   Active map translation")
-                        .size(13.0)
-                        .color(DIM),
-                );
+        egui::Frame::new()
+            .fill(Color32::from_rgb(0x23, 0x20, 0x2C))
+            .corner_radius(14)
+            .inner_margin(Margin::same(16))
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("Live input").size(16.0).color(SIDE_TEXT));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let badge = if emulating { "Translating" } else { "Idle" };
+                        ui.label(RichText::new(badge).size(13.0).color(SIDE_DIM));
+                    });
+                });
+                ui.columns(2, |cols| {
+                    cols[0].vertical_centered(|ui| {
+                        padview::show(
+                            ui,
+                            PAD_SCALE,
+                            &PadInput {
+                                xbox: false,
+                                pressed: &|k| {
+                                    DS_BUTTONS
+                                        .iter()
+                                        .any(|(n, b)| *n == k && ds_buttons & b.bit() != 0)
+                                },
+                                l2: ds.map_or(0, |d| d.l2),
+                                r2: ds.map_or(0, |d| d.r2),
+                                left: (lx, ly),
+                                right: (rx, ry),
+                            },
+                        );
+                        ui.label(RichText::new("PS5 DualSense").size(14.0).color(SIDE_DIM));
+                    });
+                    cols[1].vertical_centered(|ui| {
+                        padview::show(
+                            ui,
+                            PAD_SCALE,
+                            &PadInput {
+                                xbox: true,
+                                pressed: &|k| {
+                                    X360_BUTTONS
+                                        .iter()
+                                        .any(|(n, b)| *n == k && x_buttons & b.bits() != 0)
+                                },
+                                l2: x.map_or(0, |x| x.left_trigger),
+                                r2: x.map_or(0, |x| x.right_trigger),
+                                left: (lx, ly),
+                                right: (rx, ry),
+                            },
+                        );
+                        ui.label(RichText::new("Xbox 360 pad").size(14.0).color(SIDE_DIM));
+                    });
+                });
             });
-            let badge = if emulating { "Translating" } else { "Idle" };
-            ui.vertical_centered(|ui| {
-                padview::show(
-                    ui,
-                    PAD_SCALE,
-                    &PadInput {
-                        xbox: false,
-                        pressed: &|k| {
-                            DS_BUTTONS
-                                .iter()
-                                .any(|(n, b)| *n == k && ds_buttons & b.bit() != 0)
-                        },
-                        l2: ds.map_or(0, |d| d.l2),
-                        r2: ds.map_or(0, |d| d.r2),
-                        left: (lx, ly),
-                        right: (rx, ry),
-                    },
-                );
-                ui.label(RichText::new("PS5 DualSense").size(14.0).color(SOFT));
-                mono_badge(ui, badge);
-                let (line, _) = ui.allocate_exact_size(Vec2::new(1.0, 16.0), Sense::hover());
-                ui.painter().rect_filled(line, 0, DIM);
-                padview::show(
-                    ui,
-                    PAD_SCALE,
-                    &PadInput {
-                        xbox: true,
-                        pressed: &|k| {
-                            X360_BUTTONS
-                                .iter()
-                                .any(|(n, b)| *n == k && x_buttons & b.bits() != 0)
-                        },
-                        l2: x.map_or(0, |x| x.left_trigger),
-                        r2: x.map_or(0, |x| x.right_trigger),
-                        left: (lx, ly),
-                        right: (rx, ry),
-                    },
-                );
-                mono_badge(ui, badge);
-                ui.label(RichText::new("Xbox 360 pad").size(14.0).color(SOFT));
-            });
-        });
     }
 }
 
@@ -734,63 +868,6 @@ fn hide_text(installed: bool, on: bool) -> String {
     } else {
         "Real pad is visible to games (double input possible).".into()
     }
-}
-
-fn mono_badge(ui: &mut egui::Ui, text: &str) {
-    egui::Frame::new()
-        .fill(RAISED)
-        .stroke(Stroke::new(1.0, BORDER))
-        .corner_radius(6)
-        .inner_margin(Margin::symmetric(8, 4))
-        .show(ui, |ui| {
-            ui.label(
-                RichText::new(text)
-                    .font(FontId::monospace(12.0))
-                    .color(SOFT),
-            );
-        });
-}
-
-fn mode_button(
-    ui: &mut egui::Ui,
-    text: &str,
-    width: f32,
-    outline: Option<Color32>,
-) -> egui::Response {
-    let b = egui::Button::new(RichText::new(text).size(15.0).color(if outline.is_some() {
-        TEXT
-    } else {
-        SOFT
-    }))
-    .fill(if outline.is_some() { HOVER } else { RAISED })
-    .stroke(Stroke::new(1.0, outline.unwrap_or(BORDER)))
-    .corner_radius(10)
-    .min_size(Vec2::new(width, 56.0));
-    ui.add(b)
-}
-
-/// The round on/off dial: the tick points at the end of the arc it is on.
-fn knob(ui: &mut egui::Ui, active: bool) -> egui::Response {
-    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(128.0), Sense::click());
-    let (p, c) = (ui.painter(), rect.center());
-    let colour = if active { ACCENT } else { AMBER };
-    p.circle(c, 64.0, BG, Stroke::new(1.0, BORDER));
-    let arc: Vec<egui::Pos2> = (135..=405)
-        .step_by(5)
-        .map(|d| {
-            let a = (d as f32).to_radians();
-            c + Vec2::new(a.cos(), a.sin()) * 44.0
-        })
-        .collect();
-    p.add(egui::Shape::line(arc, Stroke::new(6.0, colour)));
-    p.circle(c, 32.0, RAISED, Stroke::new(1.0, BORDER));
-    let a = (if active { 45.0f32 } else { 135.0 }).to_radians();
-    let dir = Vec2::new(a.cos(), a.sin());
-    p.line_segment([c + dir * 12.0, c + dir * 24.0], Stroke::new(4.0, colour));
-    if resp.hovered() {
-        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-    }
-    resp
 }
 
 /// iOS-style switch; the caller reads the new value from `on` after a click.
@@ -817,7 +894,7 @@ fn toggle(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
     ui.painter().circle_filled(
         egui::pos2(x, rect.center().y),
         7.0,
-        if *on { TEXT } else { SOFT },
+        Color32::WHITE,
     );
     resp
 }
@@ -1151,24 +1228,11 @@ fn style(ctx: &egui::Context) {
             .push("symbols".into());
     }
     ctx.set_fonts(fonts);
-    let mut v = egui::Visuals::dark();
-    v.panel_fill = BG;
-    v.window_fill = BG;
-    v.extreme_bg_color = BG;
-    v.widgets.noninteractive.fg_stroke.color = TEXT;
-    v.widgets.inactive.fg_stroke.color = TEXT;
-    v.widgets.inactive.bg_fill = RAISED;
-    v.widgets.inactive.weak_bg_fill = RAISED;
-    v.widgets.hovered.weak_bg_fill = HOVER;
-    v.widgets.hovered.bg_fill = HOVER;
-    v.selection.bg_fill = ACCENT.gamma_multiply(0.5);
-    v.selection.stroke = Stroke::new(1.0, ACCENT);
-    // one look for every widget: rounded, hairline border, accent when pressed, no hover jitter
-    v.widgets.inactive.bg_stroke = Stroke::new(1.0, BORDER);
-    v.widgets.hovered.bg_stroke = Stroke::new(1.0, TILE_OFF);
-    v.widgets.active.bg_fill = ACCENT.gamma_multiply(0.35);
-    v.widgets.active.weak_bg_fill = ACCENT.gamma_multiply(0.35);
-    v.widgets.active.bg_stroke = Stroke::new(1.0, ACCENT);
+    let mut v = egui::Visuals::light();
+    let tint = Color32::from_rgb(0xB9, 0xCB, 0xE6);
+    v.panel_fill = TAN;
+    v.window_fill = CREAM;
+    v.extreme_bg_color = Color32::from_rgb(0xF5, 0xF1, 0xE6);
     for w in [
         &mut v.widgets.noninteractive,
         &mut v.widgets.inactive,
@@ -1176,15 +1240,28 @@ fn style(ctx: &egui::Context) {
         &mut v.widgets.active,
         &mut v.widgets.open,
     ] {
+        w.fg_stroke.color = TEXT;
         w.corner_radius = CornerRadius::same(8);
         w.expansion = 0.0;
     }
-    ctx.style_mut_of(egui::Theme::Dark, |s| {
+    v.widgets.inactive.bg_fill = RAISED;
+    v.widgets.inactive.weak_bg_fill = RAISED;
+    v.widgets.inactive.bg_stroke = Stroke::new(1.0, OUTLINE);
+    v.widgets.hovered.bg_fill = HOVER;
+    v.widgets.hovered.weak_bg_fill = HOVER;
+    v.widgets.hovered.bg_stroke = Stroke::new(1.0, DIM);
+    v.widgets.active.bg_fill = tint;
+    v.widgets.active.weak_bg_fill = tint;
+    v.widgets.active.bg_stroke = Stroke::new(1.0, ACCENT);
+    v.selection.bg_fill = Color32::from_rgb(0x8F, 0xAD, 0xDA);
+    v.slider_trailing_fill = true;
+    v.selection.stroke = Stroke::new(1.0, ACCENT);
+    ctx.style_mut_of(egui::Theme::Light, |s| {
         s.spacing.button_padding = Vec2::new(14.0, 7.0);
         s.spacing.interact_size.y = 30.0;
     });
-    ctx.set_theme(egui::ThemePreference::Dark); // the system theme must not pick light visuals
-    ctx.set_visuals_of(egui::Theme::Dark, v);
+    ctx.set_theme(egui::ThemePreference::Light); // the system theme must not pick dark visuals
+    ctx.set_visuals_of(egui::Theme::Light, v);
 }
 
 fn spawn_hide_state(tx: &Sender<Msg>, ctx: &egui::Context) {
