@@ -134,9 +134,16 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     // one opaque mesh, lit from above: vertex colour follows height, so there are no seams
     let lit_by_y = |y: f32| {
         let t = ((y - rect.min.y) / (CANVAS.y * scale)).clamp(0.0, 1.0);
-        let (top, low) = (Color32::from_rgb(0xF1, 0xF3, 0xF6), Color32::from_rgb(0xB4, 0xBA, 0xC4));
+        let (top, low) = (
+            Color32::from_rgb(0xF1, 0xF3, 0xF6),
+            Color32::from_rgb(0xB4, 0xBA, 0xC4),
+        );
         let m = |a: u8, b: u8| (f32::from(a) + (f32::from(b) - f32::from(a)) * t) as u8;
-        Color32::from_rgb(m(top.r(), low.r()), m(top.g(), low.g()), m(top.b(), low.b()))
+        Color32::from_rgb(
+            m(top.r(), low.r()),
+            m(top.g(), low.g()),
+            m(top.b(), low.b()),
+        )
     };
     let mut m = egui::Mesh::default();
     let centre = at(130.0, 64.0);
@@ -153,15 +160,27 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     if !xbox {
         fill(poly(DS_PANEL), DARK, Stroke::new(1.0, KEY));
         // the light bar: a U of light under the touchpad
-        let u = vec![at(97.0, 30.0), at(97.0, 57.0), at(163.0, 57.0), at(163.0, 30.0)];
-        painter.add(Shape::line(u.clone(), Stroke::new(4.0 * scale, ACCENT.gamma_multiply(0.18))));
+        let u = vec![
+            at(97.0, 30.0),
+            at(97.0, 57.0),
+            at(163.0, 57.0),
+            at(163.0, 30.0),
+        ];
+        painter.add(Shape::line(
+            u.clone(),
+            Stroke::new(4.0 * scale, ACCENT.gamma_multiply(0.18)),
+        ));
         painter.add(Shape::line(u, Stroke::new(1.4 * scale, ACCENT)));
     }
 
     // shoulders: dark glossy trigger caps on the outer corners (fill with pull), bumper keys just inside
     let cap = |geom: &str, pull: u8, label: &str, lx: f32| {
         let pts = poly(geom);
-        painter.add(Shape::convex_polygon(pts.clone(), KEY, Stroke::new(1.0, KEY_EDGE)));
+        painter.add(Shape::convex_polygon(
+            pts.clone(),
+            KEY,
+            Stroke::new(1.0, KEY_EDGE),
+        ));
         painter.add(Shape::convex_polygon(
             pts,
             ACCENT.gamma_multiply(f32::from(pull) / 255.0),
@@ -228,7 +247,10 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         } else {
             let inset = Vec2::new(r * 0.6 * scale, 1.3 * scale);
             painter.line_segment(
-                [r_.left_top() + inset, r_.right_top() + Vec2::new(-inset.x, inset.y)],
+                [
+                    r_.left_top() + inset,
+                    r_.right_top() + Vec2::new(-inset.x, inset.y),
+                ],
                 Stroke::new(1.0, gloss),
             );
         }
@@ -253,8 +275,16 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     let bumper = |key: &str, x: f32, label: &str| {
         part(key, x, 7.0, 24.0, 12.0, 4.0, Some(label), 7.0, None, KEY);
     };
-    bumper(if xbox { "LeftShoulder" } else { "L1" }, 68.0, if xbox { "LB" } else { "L1" });
-    bumper(if xbox { "RightShoulder" } else { "R1" }, 168.0, if xbox { "RB" } else { "R1" });
+    bumper(
+        if xbox { "LeftShoulder" } else { "L1" },
+        68.0,
+        if xbox { "LB" } else { "L1" },
+    );
+    bumper(
+        if xbox { "RightShoulder" } else { "R1" },
+        168.0,
+        if xbox { "RB" } else { "R1" },
+    );
 
     let dpad = |cx: f32, cy: f32| {
         let base = if xbox { PALE_KEY } else { KEY };
@@ -264,7 +294,18 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
             ("DpadLeft", -21.0, -7.0, "◀"),
             ("DpadRight", 7.0, -7.0, "▶"),
         ] {
-            part(key, cx + dx, cy + dy, 14.0, 14.0, 3.0, Some(arrow), 7.0, None, base);
+            part(
+                key,
+                cx + dx,
+                cy + dy,
+                14.0,
+                14.0,
+                3.0,
+                Some(arrow),
+                7.0,
+                None,
+                base,
+            );
         }
     };
     let (green, red, amber, blue, violet) = (
@@ -277,27 +318,177 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     let (left_c, right_c) = if xbox {
         dpad(98.0, 104.0);
         // the guide sits in a ring lit green
-        painter.circle_stroke(at(130.0, 39.0), 13.0 * scale, Stroke::new(2.4 * scale, Color32::from_rgb(0x59, 0xB3, 0x3C).gamma_multiply(0.55)));
-        part("Back", 106.0, 52.0, 14.0, 9.0, 4.0, Some("◀"), 5.0, None, KEY);
-        part("Start", 140.0, 52.0, 14.0, 9.0, 4.0, Some("▶"), 5.0, None, KEY);
-        part("Guide", 120.0, 29.0, 20.0, 20.0, 10.0, Some("✕"), 10.0, None, PALE_KEY);
-        part("Y", 189.0, 42.0, 18.0, 18.0, 9.0, Some("Y"), 10.0, Some(amber), KEY);
-        part("B", 207.0, 60.0, 18.0, 18.0, 9.0, Some("B"), 10.0, Some(red), KEY);
-        part("A", 189.0, 78.0, 18.0, 18.0, 9.0, Some("A"), 10.0, Some(green), KEY);
-        part("X", 171.0, 60.0, 18.0, 18.0, 9.0, Some("X"), 10.0, Some(blue), KEY);
+        painter.circle_stroke(
+            at(130.0, 39.0),
+            13.0 * scale,
+            Stroke::new(
+                2.4 * scale,
+                Color32::from_rgb(0x59, 0xB3, 0x3C).gamma_multiply(0.55),
+            ),
+        );
+        part(
+            "Back",
+            106.0,
+            52.0,
+            14.0,
+            9.0,
+            4.0,
+            Some("◀"),
+            5.0,
+            None,
+            KEY,
+        );
+        part(
+            "Start",
+            140.0,
+            52.0,
+            14.0,
+            9.0,
+            4.0,
+            Some("▶"),
+            5.0,
+            None,
+            KEY,
+        );
+        part(
+            "Guide",
+            120.0,
+            29.0,
+            20.0,
+            20.0,
+            10.0,
+            Some("✕"),
+            10.0,
+            None,
+            PALE_KEY,
+        );
+        part(
+            "Y",
+            189.0,
+            42.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("Y"),
+            10.0,
+            Some(amber),
+            KEY,
+        );
+        part(
+            "B",
+            207.0,
+            60.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("B"),
+            10.0,
+            Some(red),
+            KEY,
+        );
+        part(
+            "A",
+            189.0,
+            78.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("A"),
+            10.0,
+            Some(green),
+            KEY,
+        );
+        part(
+            "X",
+            171.0,
+            60.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("X"),
+            10.0,
+            Some(blue),
+            KEY,
+        );
         ((62.0, 56.0), (162.0, 104.0))
     } else {
         dpad(62.0, 66.0);
         // touchpad: dark glass with a sheen
-        part("Touchpad", 100.0, 28.0, 60.0, 26.0, 6.0, None, 0.0, None, Color32::from_rgb(0x26, 0x2A, 0x33));
+        part(
+            "Touchpad",
+            100.0,
+            28.0,
+            60.0,
+            26.0,
+            6.0,
+            None,
+            0.0,
+            None,
+            Color32::from_rgb(0x26, 0x2A, 0x33),
+        );
         part("Create", 86.0, 32.0, 6.0, 12.0, 3.0, None, 0.0, None, KEY);
         part("Options", 168.0, 32.0, 6.0, 12.0, 3.0, None, 0.0, None, KEY);
-        part("Ps", 123.0, 66.0, 14.0, 14.0, 7.0, Some("PS"), 5.0, None, KEY);
+        part(
+            "Ps",
+            123.0,
+            66.0,
+            14.0,
+            14.0,
+            7.0,
+            Some("PS"),
+            5.0,
+            None,
+            KEY,
+        );
         part("Mute", 124.0, 86.0, 12.0, 5.0, 2.0, None, 0.0, None, KEY);
-        part("Triangle", 189.0, 42.0, 18.0, 18.0, 9.0, Some("△"), 10.0, Some(green), KEY);
-        part("Circle", 207.0, 60.0, 18.0, 18.0, 9.0, Some("○"), 10.0, Some(red), KEY);
-        part("Cross", 189.0, 78.0, 18.0, 18.0, 9.0, Some("✕"), 10.0, Some(Color32::from_rgb(0x5B, 0x8D, 0xEF)), KEY);
-        part("Square", 171.0, 60.0, 18.0, 18.0, 9.0, Some("□"), 10.0, Some(violet), KEY);
+        part(
+            "Triangle",
+            189.0,
+            42.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("△"),
+            10.0,
+            Some(green),
+            KEY,
+        );
+        part(
+            "Circle",
+            207.0,
+            60.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("○"),
+            10.0,
+            Some(red),
+            KEY,
+        );
+        part(
+            "Cross",
+            189.0,
+            78.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("✕"),
+            10.0,
+            Some(Color32::from_rgb(0x5B, 0x8D, 0xEF)),
+            KEY,
+        );
+        part(
+            "Square",
+            171.0,
+            60.0,
+            18.0,
+            18.0,
+            9.0,
+            Some("□"),
+            10.0,
+            Some(violet),
+            KEY,
+        );
         ((98.0, 104.0), (162.0, 104.0))
     };
 
@@ -313,18 +504,33 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
             well,
             19.0 * scale,
             shade(KEY, 0.8),
-            Stroke::new(if pressed { 2.0 } else { 1.0 }, if pressed { ACCENT } else { KEY_EDGE }),
-            );
+            Stroke::new(
+                if pressed { 2.0 } else { 1.0 },
+                if pressed { ACCENT } else { KEY_EDGE },
+            ),
+        );
         // +-9px of travel
         let dx = (f32::from(sx) - 128.0) / 128.0 * 9.0;
         let dy = (f32::from(sy) - 128.0) / 128.0 * 9.0;
         let cap = at(cx + dx, cy + dy);
-        painter.circle_filled(cap + Vec2::new(0.0, 1.5 * scale), 12.5 * scale, Color32::from_black_alpha(70));
+        painter.circle_filled(
+            cap + Vec2::new(0.0, 1.5 * scale),
+            12.5 * scale,
+            Color32::from_black_alpha(70),
+        );
         painter.circle(cap, 12.0 * scale, DARK, Stroke::new(1.0, KEY_EDGE));
         for r in [9.0, 6.0] {
-            painter.circle_stroke(cap, r * scale, Stroke::new(0.7, Color32::from_white_alpha(26)));
+            painter.circle_stroke(
+                cap,
+                r * scale,
+                Stroke::new(0.7, Color32::from_white_alpha(26)),
+            );
         }
-        painter.circle_filled(cap + Vec2::new(-3.5, -4.5) * scale, 2.6 * scale, Color32::from_white_alpha(30));
+        painter.circle_filled(
+            cap + Vec2::new(-3.5, -4.5) * scale,
+            2.6 * scale,
+            Color32::from_white_alpha(30),
+        );
         ui.interact(
             Rect::from_center_size(well, Vec2::splat(38.0 * scale)),
             ui.scope_id().with((xbox, key)),
