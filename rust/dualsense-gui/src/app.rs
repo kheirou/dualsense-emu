@@ -115,6 +115,7 @@ pub struct App {
     profile: MapProfile,
     profile_path: PathBuf,
     dirty: bool, // profile changed, not yet saved
+    hidden: bool, // window is hidden in the tray
     tab: Tab,
     remap_sel: DsButton,
     hex_text: String,
@@ -188,6 +189,7 @@ impl App {
             profile,
             profile_path,
             dirty: false,
+            hidden: false,
             tab: Tab::Dashboard,
             remap_sel: DsButton::Cross,
             hex_text,
@@ -253,6 +255,7 @@ impl App {
         if ctx.input(|i| i.viewport().close_requested()) && !self.exiting.load(Relaxed) {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            self.hidden = true;
         }
     }
 }
@@ -264,7 +267,16 @@ impl eframe::App for App {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
-        ctx.request_repaint_after(Duration::from_millis(33));
+        if ctx.input(|i| i.viewport().focused == Some(true)) {
+            self.hidden = false; // the tray's Show window focuses it
+        }
+        // 30 fps only while the live pad view is on screen; the status thread wakes it on changes
+        let fps = match (self.hidden, self.tab) {
+            (true, _) => Duration::from_secs(1),
+            (_, Tab::Dashboard) => Duration::from_millis(33),
+            _ => Duration::from_millis(250),
+        };
+        ctx.request_repaint_after(fps);
         if self.dirty && !ctx.input(|i| i.pointer.any_down()) {
             self.dirty = false;
             let _ = self.profile.save(&self.profile_path); // a read-only profile folder must not stop the pad
