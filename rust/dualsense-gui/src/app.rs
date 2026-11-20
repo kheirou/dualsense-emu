@@ -131,7 +131,7 @@ pub struct App {
     status: Arc<Mutex<EmuStatus>>,
     profile: MapProfile,
     profile_path: PathBuf,
-    dirty: bool, // profile changed, not yet saved
+    dirty: bool,  // profile changed, not yet saved
     hidden: bool, // window is hidden in the tray
     tab: Tab,
     remap_sel: DsButton,
@@ -369,7 +369,15 @@ impl App {
             let on = self.tab == tab;
             let p = ui.painter();
             if on || resp.hovered() {
-                p.rect_filled(r, 10, if on { SIDE_ON } else { SIDE_ON.gamma_multiply(0.5) });
+                p.rect_filled(
+                    r,
+                    10,
+                    if on {
+                        SIDE_ON
+                    } else {
+                        SIDE_ON.gamma_multiply(0.5)
+                    },
+                );
             }
             let tick = if on { tick } else { tick.gamma_multiply(0.5) };
             p.rect_filled(
@@ -463,7 +471,12 @@ impl App {
             FontId::proportional(30.0),
             SIDE_TEXT,
         );
-        let g = p.layout(note, FontId::proportional(14.0), SIDE_TEXT, rect.width() * 0.6);
+        let g = p.layout(
+            note,
+            FontId::proportional(14.0),
+            SIDE_TEXT,
+            rect.width() * 0.6,
+        );
         p.galley(rect.min + Vec2::new(24.0, 62.0), g, SIDE_TEXT);
         for (i, (k, v)) in [
             ("Pad", transport.to_string()),
@@ -491,7 +504,10 @@ impl App {
         }
         if status.state == EmuState::DriverMissing {
             let r = Rect::from_min_size(rect.min + Vec2::new(24.0, 100.0), Vec2::new(190.0, 30.0));
-            if ui.put(r, egui::Button::new("Install ViGEmBus driver")).clicked() {
+            if ui
+                .put(r, egui::Button::new("Install ViGEmBus driver"))
+                .clicked()
+            {
                 self.vigem_note = Some("Installing ViGEmBus (approve the prompt)...".into());
                 let (tx, ctx) = (self.tx.clone(), ui.ctx().clone());
                 std::thread::spawn(move || {
@@ -513,11 +529,29 @@ impl App {
         } else {
             (GREEN, Color32::from_rgb(0x2A, 0x62, 0x3C), "Start")
         };
-        let down = if resp.is_pointer_button_down_on() { 3.0 } else { 0.0 };
+        let down = if resp.is_pointer_button_down_on() {
+            3.0
+        } else {
+            0.0
+        };
         let f = br.translate(Vec2::new(0.0, down));
         p.rect_filled(br.translate(Vec2::new(0.0, 4.0)), 14, lip);
-        p.rect_filled(f, 14, if resp.hovered() { face.gamma_multiply(1.1) } else { face });
-        p.text(f.center(), Align2::CENTER_CENTER, label, FontId::proportional(20.0), SIDE_TEXT);
+        p.rect_filled(
+            f,
+            14,
+            if resp.hovered() {
+                face.gamma_multiply(1.1)
+            } else {
+                face
+            },
+        );
+        p.text(
+            f.center(),
+            Align2::CENTER_CENTER,
+            label,
+            FontId::proportional(20.0),
+            SIDE_TEXT,
+        );
         if resp.hovered() {
             ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
         }
@@ -540,7 +574,11 @@ impl App {
         );
         let flags = format!(
             "Invert Y {} · Swap {}",
-            if p.invert_left_y && p.invert_right_y { "on" } else { "off" },
+            if p.invert_left_y && p.invert_right_y {
+                "on"
+            } else {
+                "off"
+            },
             if p.swap_sticks { "on" } else { "off" }
         );
         let remaps = p.remap.as_ref().map_or(0, |m| m.len());
@@ -580,7 +618,15 @@ impl App {
             if tile(ui, w, RED, "Sticks", &sticks, &flags, "Change") {
                 go = Some(Tab::Sticks);
             }
-            if tile(ui, w, AMBER, "Buttons", &maps, "Pick a button, choose what it acts as", "Change") {
+            if tile(
+                ui,
+                w,
+                AMBER,
+                "Buttons",
+                &maps,
+                "Pick a button, choose what it acts as",
+                "Change",
+            ) {
                 go = Some(Tab::Buttons);
             }
             if tile(ui, w, GREEN, "Lightbar", &bar, leds, "Change") {
@@ -617,14 +663,30 @@ fn tile(
     p.rect_filled(r, 12, if resp.hovered() { RAISED } else { CARD });
     p.rect_filled(
         Rect::from_min_size(r.min, Vec2::new(w, 5.0)),
-        CornerRadius { nw: 12, ne: 12, sw: 0, se: 0 },
+        CornerRadius {
+            nw: 12,
+            ne: 12,
+            sw: 0,
+            se: 0,
+        },
         top,
     );
-    p.text(r.min + Vec2::new(14.0, 18.0), Align2::LEFT_TOP, title, FontId::proportional(13.0), DIM);
+    p.text(
+        r.min + Vec2::new(14.0, 18.0),
+        Align2::LEFT_TOP,
+        title,
+        FontId::proportional(13.0),
+        DIM,
+    );
     let g = p.layout(big.to_string(), FontId::proportional(15.0), TEXT, w - 28.0);
     let h = g.size().y;
     p.galley(r.min + Vec2::new(14.0, 38.0), g, TEXT);
-    let g = p.layout(small.to_string(), FontId::proportional(12.5), SOFT, w - 28.0);
+    let g = p.layout(
+        small.to_string(),
+        FontId::proportional(12.5),
+        SOFT,
+        w - 28.0,
+    );
     p.galley(r.min + Vec2::new(14.0, 46.0 + h), g, SOFT);
     p.text(
         egui::pos2(r.min.x + 14.0, r.max.y - 20.0),
@@ -650,11 +712,21 @@ fn paint_scene(p: &egui::Painter, r: Rect) {
     p.rect_filled(r, 16, GROUND);
     p.rect_filled(
         Rect::from_min_max(r.min, egui::pos2(x1, top + 1.0)),
-        CornerRadius { nw: 16, ne: 16, sw: 0, se: 0 },
+        CornerRadius {
+            nw: 16,
+            ne: 16,
+            sw: 0,
+            se: 0,
+        },
         TOP,
     );
     let mut sky = egui::Mesh::default();
-    for (x, y, c) in [(x0, top, TOP), (x1, top, TOP), (x1, hz, HORIZON), (x0, hz, HORIZON)] {
+    for (x, y, c) in [
+        (x0, top, TOP),
+        (x1, top, TOP),
+        (x1, hz, HORIZON),
+        (x0, hz, HORIZON),
+    ] {
         sky.colored_vertex(egui::pos2(x, y), c);
     }
     sky.add_triangle(0, 1, 2);
@@ -891,11 +963,8 @@ fn toggle(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
         StrokeKind::Inside,
     );
     let x = egui::lerp((rect.left() + 10.0)..=(rect.right() - 10.0), t);
-    ui.painter().circle_filled(
-        egui::pos2(x, rect.center().y),
-        7.0,
-        Color32::WHITE,
-    );
+    ui.painter()
+        .circle_filled(egui::pos2(x, rect.center().y), 7.0, Color32::WHITE);
     resp
 }
 
