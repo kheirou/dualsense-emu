@@ -17,9 +17,9 @@ const LABEL_OFF: Color32 = Color32::from_rgb(0xB4, 0xBA, 0xC6);
 const LABEL_ON: Color32 = Color32::from_rgb(0x12, 0x14, 0x1A);
 
 // the DualSense has a wide body with a black centre panel; the 360 pad has rounder grips
-const DS_BODY: &str = "M 40,24 C 40,18 55,18 75,18 L 185,18 C 205,18 220,18 220,24 C 236,70 252,128 234,150 C 220,166 196,162 186,142 L 176,122 L 84,122 L 74,142 C 64,162 40,166 26,150 C 8,128 24,70 40,24 Z";
-const XBOX_BODY: &str = "M 44,26 C 44,16 58,14 80,14 L 180,14 C 202,14 216,16 216,26 C 234,64 258,132 238,154 C 224,170 196,162 186,140 L 176,122 L 84,122 L 74,140 C 64,162 36,170 22,154 C 2,132 26,64 44,26 Z";
-const DS_PANEL: &str = "M 90,19 L 170,19 C 175,50 174,95 168,121 L 92,121 C 86,95 85,50 90,19 Z";
+const DS_BODY: &str = "M 38,26 C 38,18 55,17 75,17 L 185,17 C 205,17 222,18 222,26 C 238,72 256,132 240,156 C 228,172 198,168 188,144 L 178,124 L 82,124 L 72,144 C 62,168 32,172 20,156 C 4,132 22,72 38,26 Z";
+const XBOX_BODY: &str = "M 44,26 C 44,16 58,14 80,14 L 180,14 C 202,14 216,16 216,26 C 234,64 258,134 240,158 C 226,172 196,164 186,140 L 176,122 L 84,122 L 74,140 C 64,164 34,172 20,158 C 2,134 26,64 44,26 Z";
+const DS_PANEL: &str = "M 94,18 L 166,18 C 171,50 170,96 165,123 L 95,123 C 90,96 89,50 94,18 Z";
 
 /// Blends towards white (`t` 0..1).
 fn lit(c: Color32, t: f32) -> Color32 {
@@ -443,7 +443,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         part("Mute", 124.0, 86.0, 12.0, 5.0, 2.0, None, 0.0, None, KEY);
         part(
             "Triangle",
-            189.0,
+            193.0,
             42.0,
             18.0,
             18.0,
@@ -455,7 +455,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "Circle",
-            207.0,
+            211.0,
             60.0,
             18.0,
             18.0,
@@ -467,7 +467,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "Cross",
-            189.0,
+            193.0,
             78.0,
             18.0,
             18.0,
@@ -479,7 +479,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "Square",
-            171.0,
+            175.0,
             60.0,
             18.0,
             18.0,
