@@ -18,7 +18,7 @@ const LABEL_ON: Color32 = Color32::from_rgb(0x12, 0x14, 0x1A);
 
 // the DualSense has a wide body with a black centre panel; the 360 pad has rounder grips
 const DS_BODY: &str = "M 38,26 C 38,18 55,17 75,17 L 185,17 C 205,17 222,18 222,26 C 238,72 256,132 240,156 C 228,172 198,168 188,144 L 178,124 L 82,124 L 72,144 C 62,168 32,172 20,156 C 4,132 22,72 38,26 Z";
-const XBOX_BODY: &str = "M 44,26 C 44,16 58,14 80,14 L 180,14 C 202,14 216,16 216,26 C 234,64 258,134 240,158 C 226,172 196,164 186,140 L 176,122 L 84,122 L 74,140 C 64,164 34,172 20,158 C 2,134 26,64 44,26 Z";
+const XBOX_BODY: &str = "M 52,14 C 52,5 66,4 90,4 L 170,4 C 194,4 208,5 208,14 C 232,28 256,70 252,112 C 250,140 238,164 224,166 C 210,168 198,150 188,130 C 184,122 178,119 168,119 L 92,119 C 82,119 76,122 72,130 C 62,150 50,168 36,166 C 22,164 10,140 8,112 C 4,70 28,28 52,14 Z";
 const DS_PANEL: &str = "M 94,18 L 166,18 C 171,50 170,96 165,123 L 95,123 C 90,96 89,50 94,18 Z";
 
 /// Blends towards white (`t` 0..1).
@@ -202,7 +202,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     );
     cap("M 230,27 C 230,12 220,4 206,4 L 200,4 C 197,4 196,6 196,9 L 196,16 C 208,16 218,20 223,28 Z", input.r2, if xbox { "RT" } else { "R2" }, 199.0);
 
-    // a key: coloured Xbox face keys are solid; everything else is a dark key with a coloured symbol
+    // a key: a dark (or pale) key, with a coloured symbol when it has a colour
     let part = |key: &str,
                 x: f32,
                 y: f32,
@@ -215,15 +215,12 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
                 base: Color32| {
         let r_ = Rect::from_min_size(at(x, y), Vec2::new(w, h) * scale);
         let on = (input.pressed)(key);
-        let solid = xbox && colour.is_some();
         let fill = if on {
             colour.map_or(ACCENT, |c| lit(c, 0.3))
-        } else if solid {
-            colour.unwrap_or(base)
         } else {
             base
         };
-        let edge = colour.map_or(KEY_EDGE, |c| shade(c, if solid { 0.6 } else { 0.7 }));
+        let edge = colour.map_or(KEY_EDGE, |c| shade(c, 0.7));
         let rr = CornerRadius::same((r * scale) as u8);
         if on {
             painter.rect_stroke(
@@ -255,8 +252,8 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
             );
         }
         if let Some(l) = label {
-            let pale = solid || base == PALE_KEY;
-            let ink = if on || solid {
+            let pale = base == PALE_KEY;
+            let ink = if on {
                 LABEL_ON
             } else {
                 colour.unwrap_or(if pale { LABEL_ON } else { LABEL_OFF })
@@ -287,7 +284,10 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     );
 
     let dpad = |cx: f32, cy: f32| {
-        let base = if xbox { PALE_KEY } else { KEY };
+        if xbox {
+            painter.circle_filled(at(cx, cy), 20.0 * scale, DARK);
+        }
+        let base = KEY;
         for (key, dx, dy, arrow) in [
             ("DpadUp", -7.0, -21.0, "▲"),
             ("DpadDown", -7.0, 7.0, "▼"),
@@ -311,61 +311,55 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     let (green, red, amber, blue, violet) = (
         Color32::from_rgb(0x4C, 0xC3, 0x8A),
         Color32::from_rgb(0xE5, 0x48, 0x4D),
-        Color32::from_rgb(0xE8, 0xA8, 0x2E),
+        Color32::from_rgb(0xF2, 0xC7, 0x2E),
         Color32::from_rgb(0x4F, 0x9F, 0xE0),
         Color32::from_rgb(0xC9, 0x7B, 0xD6),
     );
     let (left_c, right_c) = if xbox {
-        dpad(98.0, 104.0);
-        // the guide sits in a ring lit green
-        painter.circle_stroke(
-            at(130.0, 39.0),
-            13.0 * scale,
-            Stroke::new(
-                2.4 * scale,
-                Color32::from_rgb(0x59, 0xB3, 0x3C).gamma_multiply(0.55),
-            ),
-        );
+        dpad(99.0, 85.0);
         part(
             "Back",
-            106.0,
-            52.0,
-            14.0,
-            9.0,
-            4.0,
+            108.0,
+            41.0,
+            10.0,
+            10.0,
+            5.0,
             Some("◀"),
             5.0,
             None,
-            KEY,
+            PALE_KEY,
         );
         part(
             "Start",
-            140.0,
-            52.0,
-            14.0,
-            9.0,
-            4.0,
+            144.0,
+            41.0,
+            10.0,
+            10.0,
+            5.0,
             Some("▶"),
             5.0,
             None,
-            KEY,
+            PALE_KEY,
+        );
+        part(
+            "Share", 125.0, 56.0, 12.0, 6.0, 3.0, None, 0.0, None, PALE_KEY,
         );
         part(
             "Guide",
-            120.0,
-            29.0,
+            121.0,
+            12.0,
             20.0,
             20.0,
             10.0,
             Some("✕"),
             10.0,
             None,
-            PALE_KEY,
+            DARK,
         );
         part(
             "Y",
-            189.0,
-            42.0,
+            185.0,
+            22.0,
             18.0,
             18.0,
             9.0,
@@ -376,8 +370,8 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "B",
-            207.0,
-            60.0,
+            202.0,
+            38.0,
             18.0,
             18.0,
             9.0,
@@ -388,8 +382,8 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "A",
-            189.0,
-            78.0,
+            185.0,
+            54.0,
             18.0,
             18.0,
             9.0,
@@ -400,8 +394,8 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
         );
         part(
             "X",
-            171.0,
-            60.0,
+            169.0,
+            38.0,
             18.0,
             18.0,
             9.0,
@@ -410,7 +404,7 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
             Some(blue),
             KEY,
         );
-        ((62.0, 56.0), (162.0, 104.0))
+        ((68.0, 46.0), (164.0, 83.0))
     } else {
         dpad(62.0, 66.0);
         // touchpad: dark glass with a sheen
@@ -499,14 +493,28 @@ pub fn show(ui: &mut egui::Ui, scale: f32, input: &PadInput) {
     ] {
         let well = at(cx, cy);
         let pressed = (input.pressed)(key);
-        painter.circle_filled(well, 21.5 * scale, Color32::from_black_alpha(46));
+        painter.circle_filled(
+            well,
+            21.5 * scale,
+            Color32::from_black_alpha(if xbox { 24 } else { 46 }),
+        );
         painter.circle(
             well,
             19.0 * scale,
-            shade(KEY, 0.8),
+            if xbox {
+                Color32::from_rgb(0xF4, 0xF5, 0xF8)
+            } else {
+                shade(KEY, 0.8)
+            },
             Stroke::new(
                 if pressed { 2.0 } else { 1.0 },
-                if pressed { ACCENT } else { KEY_EDGE },
+                if pressed {
+                    ACCENT
+                } else if xbox {
+                    SHELL_EDGE
+                } else {
+                    KEY_EDGE
+                },
             ),
         );
         // +-9px of travel
